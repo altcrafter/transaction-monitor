@@ -1,0 +1,2157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TransactGuard AML — Data Quality Monitor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0d1117;
+      --card: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --green: #3fb950;
+      --yellow: #d29922;
+      --red: #f85149;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    /* ── HEADER ── */
+    .page-header {
+      background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #1a2332 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 32px 48px;
+      position: relative;
+      overflow: hidden;
+    }
+    .page-header::before {
+      content: '';
+      position: absolute;
+      top: -60px; right: -60px;
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, #58a6ff12, transparent 70%);
+      pointer-events: none;
+    }
+    .header-nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .header-nav a {
+      color: var(--accent);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: opacity 0.2s;
+    }
+    .header-nav a:hover { opacity: 0.8; }
+    .header-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 24px;
+    }
+    .header-title { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; line-height: 1.2; }
+    .header-sub {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .header-sub .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); display: inline-block; box-shadow: 0 0 6px var(--green); }
+
+    .health-score-box {
+      text-align: center;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px 32px;
+      min-width: 200px;
+    }
+    .health-score-label { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; margin-bottom: 6px; }
+    .health-score-number { font-size: 56px; font-weight: 800; line-height: 1; color: #d29922; }
+    .health-score-denom { font-size: 20px; color: var(--muted); font-weight: 400; }
+    .health-score-sub { margin-top: 8px; font-size: 12px; color: var(--muted); }
+
+    /* ── MAIN ── */
+    .main { max-width: 1400px; margin: 0 auto; padding: 32px 48px 64px; }
+
+    /* ── SUMMARY ROW ── */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+    .summary-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .summary-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px #00000040; }
+    .summary-card-icon { font-size: 22px; margin-bottom: 12px; }
+    .summary-card-score { font-size: 40px; font-weight: 800; line-height: 1; }
+    .summary-card-denom { font-size: 16px; color: var(--muted); }
+    .summary-card-label { margin-top: 6px; color: var(--muted); font-size: 12px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .summary-indicator {
+      margin-top: 14px;
+      height: 4px;
+      background: #30363d;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .summary-indicator-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.6s ease;
+    }
+    .summary-card-glow {
+      position: absolute;
+      top: 0; right: 0;
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      opacity: 0.08;
+      transform: translate(30px, -30px);
+    }
+
+    /* ── SECTIONS ── */
+    .section {
+      margin-bottom: 48px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .section-header {
+      padding: 20px 28px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: #0d1117;
+    }
+    .section-number {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      background: #58a6ff18;
+      border: 1px solid #58a6ff40;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700; color: var(--accent);
+    }
+    .section-title { font-size: 18px; font-weight: 700; flex: 1; }
+    .section-body { padding: 28px; }
+
+    /* ── BADGES ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    .table-badge {
+      display: inline-block;
+      background: #58a6ff18;
+      color: var(--accent);
+      border: 1px solid #58a6ff30;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: 'Courier New', monospace;
+    }
+
+    /* ── TABLES ── */
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th {
+      text-align: left;
+      padding: 10px 14px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: #0d1117;
+      border-bottom: 1px solid var(--border);
+    }
+    .data-table td {
+      padding: 11px 14px;
+      border-bottom: 1px solid #21262d;
+      vertical-align: middle;
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: #ffffff06; }
+    .num { font-family: 'Courier New', monospace; text-align: right; color: #c9d1d9; }
+    .mono { font-family: 'Courier New', monospace; font-size: 12px; color: #c9d1d9; }
+    .muted { color: var(--muted) !important; }
+    .pct-cell { display: flex; align-items: center; gap: 10px; }
+    .mini-bar-bg { flex: 1; height: 4px; background: #30363d; border-radius: 2px; overflow: hidden; min-width: 60px; }
+    .mini-bar-fill { height: 100%; border-radius: 2px; }
+
+    /* ── CHECK CARDS (Consistency) ── */
+    .check-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .check-card {
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+    }
+    .check-card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .check-icon { font-size: 18px; }
+    .check-label { flex: 1; font-weight: 600; font-size: 13px; }
+    .check-count { font-size: 22px; font-weight: 800; font-family: 'Courier New', monospace; }
+    .check-explanation { font-size: 12px; color: var(--muted); line-height: 1.5; margin-bottom: 10px; }
+    .check-status-row { display: flex; }
+
+    /* ── METRIC CARDS (Timeliness) ── */
+    .metric-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+    .metric-card {
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+    }
+    .metric-icon { font-size: 20px; margin-bottom: 8px; }
+    .metric-value { font-size: 26px; font-weight: 800; line-height: 1.1; margin-bottom: 4px; }
+    .metric-label { font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .metric-sub { font-size: 11px; color: #6e7681; margin-bottom: 10px; }
+
+    /* ── CHART CONTAINERS ── */
+    .chart-wrap {
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+    .chart-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 16px;
+    }
+    .chart-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; }
+
+    /* ── STAT CARDS ── */
+    .stat-highlight {
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin-bottom: 20px;
+    }
+    .stat-highlight-row { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+    .stat-item { text-align: center; }
+    .stat-item-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; }
+    .stat-item-value { font-size: 24px; font-weight: 700; font-family: 'Courier New', monospace; }
+    .stat-divider { width: 1px; height: 48px; background: var(--border); }
+
+    /* ── GAP ALERT ── */
+    .gap-alert {
+      background: #f8514918;
+      border: 1px solid #f8514940;
+      border-radius: 8px;
+      padding: 12px 16px;
+      color: var(--text);
+      font-size: 13px;
+      margin-top: 16px;
+    }
+    .gap-ok {
+      background: #3fb95018;
+      border: 1px solid #3fb95040;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 13px;
+      margin-top: 16px;
+    }
+
+    /* ── UNENRICHED BANNER ── */
+    .unenriched-banner {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: #d2992218;
+      border: 1px solid #d2992240;
+      border-radius: 10px;
+      padding: 14px 20px;
+      margin-top: 20px;
+    }
+    .unenriched-icon { font-size: 24px; }
+    .unenriched-title { font-weight: 700; font-size: 14px; color: #d29922; }
+    .unenriched-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .unenriched-count { font-size: 32px; font-weight: 800; color: #d29922; font-family: 'Courier New', monospace; margin-left: auto; }
+
+    /* ── TREND SECTION ── */
+    .trend-section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 48px;
+    }
+    .trend-header {
+      padding: 20px 28px;
+      border-bottom: 1px solid var(--border);
+      background: #0d1117;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .trend-title { font-size: 18px; font-weight: 700; }
+    .trend-body { padding: 28px; }
+
+    /* ── FOOTER ── */
+    .footer {
+      text-align: center;
+      padding: 32px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .footer a { color: var(--accent); text-decoration: none; }
+
+    @media (max-width: 1100px) {
+      .summary-grid { grid-template-columns: repeat(2, 1fr); }
+      .metric-cards-grid { grid-template-columns: repeat(3, 1fr); }
+      .chart-2col { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 700px) {
+      .main { padding: 16px; }
+      .page-header { padding: 20px 16px; }
+      .summary-grid { grid-template-columns: 1fr 1fr; }
+      .metric-cards-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════
+     HEADER
+══════════════════════════════════════════════════════ -->
+<header class="page-header">
+  <div style="max-width:1400px;margin:0 auto">
+    <nav class="header-nav">
+      <a href="executive_dashboard.html">← Executive Dashboard</a>
+      <span>/</span>
+      <span>Data Quality Monitor</span>
+    </nav>
+    <div class="header-top">
+      <div>
+        <h1 class="header-title">📊 TransactGuard AML — Data Quality Monitor</h1>
+        <div class="header-sub">
+          <span class="dot"></span>
+          Automated quality checks
+          <span style="color:#30363d">|</span>
+          Last run: Mar 12, 2026 02:15 UTC
+          <span style="color:#30363d">|</span>
+          <span style="color:#3fb950">50,000 transactions</span>
+        </div>
+      </div>
+      <div class="health-score-box">
+        <div class="health-score-label">Overall Health Score</div>
+        <div class="health-score-number">70<span class="health-score-denom">/100</span></div>
+        <div class="health-score-sub">1 warning, 6 critical issues</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+
+  <!-- ── SUMMARY ROW ── -->
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-card-glow" style="background:#3fb950"></div>
+      <div class="summary-card-icon">📋</div>
+      <div class="summary-card-score" style="color:#3fb950">95<span class="summary-card-denom">/100</span></div>
+      <div class="summary-card-label">Completeness Score</div>
+      <div class="summary-indicator"><div class="summary-indicator-fill" style="width:95.1%;background:#3fb950"></div></div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-glow" style="background:#f85149"></div>
+      <div class="summary-card-icon">🔗</div>
+      <div class="summary-card-score" style="color:#f85149">57<span class="summary-card-denom">/100</span></div>
+      <div class="summary-card-label">Consistency Score</div>
+      <div class="summary-indicator"><div class="summary-indicator-fill" style="width:57.1%;background:#f85149"></div></div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-glow" style="background:#d29922"></div>
+      <div class="summary-card-icon">⏱</div>
+      <div class="summary-card-score" style="color:#d29922">60<span class="summary-card-denom">/100</span></div>
+      <div class="summary-card-label">Timeliness Score</div>
+      <div class="summary-indicator"><div class="summary-indicator-fill" style="width:60.0%;background:#d29922"></div></div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-glow" style="background:#d29922"></div>
+      <div class="summary-card-icon">📈</div>
+      <div class="summary-card-score" style="color:#d29922">60<span class="summary-card-denom">/100</span></div>
+      <div class="summary-card-label">Statistical Score</div>
+      <div class="summary-indicator"><div class="summary-indicator-fill" style="width:60.0%;background:#d29922"></div></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       SECTION 1 — COMPLETENESS
+  ═══════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">1</div>
+      <div class="section-title">Completeness</div>
+      <span class="badge" style="background:#3fb95020;color:#3fb950;border:1px solid #3fb95040">✓ Score: 95/100</span>
+    </div>
+    <div class="section-body">
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Table</th>
+            <th>Field</th>
+            <th style="text-align:right">NULL Count</th>
+            <th>NULL %</th>
+            <th>Status</th>
+            <th style="text-align:right">Threshold</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td><span class="table-badge">transactions</span></td>
+          <td class="mono">counterparty_name</td>
+          <td class="num">0</td>
+          <td>
+            <div class="pct-cell">
+              <span style="color:#3fb950;font-weight:600">0.0%</span>
+              <div class="mini-bar-bg"><div class="mini-bar-fill" style="width:0.0%;background:#3fb950"></div></div>
+            </div>
+          </td>
+          <td><span class="badge" style="background:#3fb95020;color:#3fb950;border:1px solid #3fb95040">✓ GOOD</span></td>
+          <td class="num muted">&lt; 5.0%</td>
+        </tr>
+        <tr>
+          <td><span class="table-badge">transactions</span></td>
+          <td class="mono">counterparty_country</td>
+          <td class="num">0</td>
+          <td>
+            <div class="pct-cell">
+              <span style="color:#3fb950;font-weight:600">0.0%</span>
+              <div class="mini-bar-bg"><div class="mini-bar-fill" style="width:0.0%;background:#3fb950"></div></div>
+            </div>
+          </td>
+          <td><span class="badge" style="background:#3fb95020;color:#3fb950;border:1px solid #3fb95040">✓ GOOD</span></td>
+          <td class="num muted">&lt; 5.0%</td>
+        </tr>
+        <tr>
+          <td><span class="table-badge">transactions</span></td>
+          <td class="mono">description</td>
+          <td class="num">0</td>
+          <td>
+            <div class="pct-cell">
+              <span style="color:#3fb950;font-weight:600">0.0%</span>
+              <div class="mini-bar-bg"><div class="mini-bar-fill" style="width:0.0%;background:#3fb950"></div></div>
+            </div>
+          </td>
+          <td><span class="badge" style="background:#3fb95020;color:#3fb950;border:1px solid #3fb95040">✓ GOOD</span></td>
+          <td class="num muted">&lt; 5.0%</td>
+        </tr>
+        <tr>
+          <td><span class="table-badge">transactions</span></td>
+          <td class="mono">channel</td>
+          <td class="num">0</td>
+          <td>
+            <div class="pct-cell">
+              <span style="color:#3fb950;font-weight:600">0.0%</span>
+              <div class="mini-bar-bg"><div class="mini-bar-fill" style="width:0.0%;background:#3fb950"></div></div>
+            </div>
+          </td>
+          <td><span class="badge" style="background:#3fb95020;color:#3fb950;border:1px solid #3fb95040">✓ GOOD</span></td>
+          <td class="num muted">&lt; 5.0%</td>
+        </tr>
+        <tr>
+          <td><span class="table-badge">transactions</span></td>
+          <td class="mono">currency</td>
+          <td class="num">0</td>
+          <td>
+            <div class="pct-cell">
+              <span style="color:#3fb950;font-weight:600">0.0%</span>
+              <div class="mini-bar-bg"><div class="mini-bar-fill" style="width:0.0%;background:#3fb950"></div></div>
+            </div>
+          </td>
+          <td><span class="badge" style="background:#3fb95020;color:#3fb950;border:1px solid #3fb95040">✓ GOOD</span></td>
+          <td class="num muted">&lt; 5.0%</td>
+        </tr>
+        <tr>
+          <td><span class="table-badge">customers</span></td>
+          <td class="mono">nationality</td>
+          <td class="num">0</td>
+          <td>
+            <div class="pct-cell">
+              <span style="color:#3fb950;font-weight:600">0.0%</span>
+              <div class="mini-bar-bg"><div class="mini-bar-fill" style="width:0.0%;background:#3fb950"></div></div>
+            </div>
+          </td>
+          <td><span class="badge" style="background:#3fb95020;color:#3fb950;border:1px solid #3fb95040">✓ GOOD</span></td>
+          <td class="num muted">&lt; 5.0%</td>
+        </tr>
+        <tr>
+          <td><span class="table-badge">customers</span></td>
+          <td class="mono">date_of_birth</td>
+          <td class="num">0</td>
+          <td>
+            <div class="pct-cell">
+              <span style="color:#3fb950;font-weight:600">0.0%</span>
+              <div class="mini-bar-bg"><div class="mini-bar-fill" style="width:0.0%;background:#3fb950"></div></div>
+            </div>
+          </td>
+          <td><span class="badge" style="background:#3fb95020;color:#3fb950;border:1px solid #3fb95040">✓ GOOD</span></td>
+          <td class="num muted">&lt; 5.0%</td>
+        </tr>
+        <tr>
+          <td><span class="table-badge">customers</span></td>
+          <td class="mono">email</td>
+          <td class="num">0</td>
+          <td>
+            <div class="pct-cell">
+              <span style="color:#3fb950;font-weight:600">0.0%</span>
+              <div class="mini-bar-bg"><div class="mini-bar-fill" style="width:0.0%;background:#3fb950"></div></div>
+            </div>
+          </td>
+          <td><span class="badge" style="background:#3fb95020;color:#3fb950;border:1px solid #3fb95040">✓ GOOD</span></td>
+          <td class="num muted">&lt; 5.0%</td>
+        </tr>
+        <tr>
+          <td><span class="table-badge">accounts</span></td>
+          <td class="mono">closed_at (active accts w/ close date)</td>
+          <td class="num">0</td>
+          <td>
+            <div class="pct-cell">
+              <span style="color:#3fb950;font-weight:600">0.0%</span>
+              <div class="mini-bar-bg"><div class="mini-bar-fill" style="width:0.0%;background:#3fb950"></div></div>
+            </div>
+          </td>
+          <td><span class="badge" style="background:#3fb95020;color:#3fb950;border:1px solid #3fb95040">✓ GOOD</span></td>
+          <td class="num muted">&lt; 1.0%</td>
+        </tr>
+        <tr>
+          <td><span class="table-badge">alerts</span></td>
+          <td class="mono">assigned_to</td>
+          <td class="num">831</td>
+          <td>
+            <div class="pct-cell">
+              <span style="color:#f85149;font-weight:600">41.55%</span>
+              <div class="mini-bar-bg"><div class="mini-bar-fill" style="width:100%;background:#f85149"></div></div>
+            </div>
+          </td>
+          <td><span class="badge" style="background:#f8514920;color:#f85149;border:1px solid #f8514940">✕ CRITICAL</span></td>
+          <td class="num muted">&lt; 5.0%</td>
+        </tr>
+        <tr>
+          <td><span class="table-badge">alerts</span></td>
+          <td class="mono">notes</td>
+          <td class="num">241</td>
+          <td>
+            <div class="pct-cell">
+              <span style="color:#d29922;font-weight:600">12.05%</span>
+              <div class="mini-bar-bg"><div class="mini-bar-fill" style="width:60.25%;background:#d29922"></div></div>
+            </div>
+          </td>
+          <td><span class="badge" style="background:#d2992220;color:#d29922;border:1px solid #d2992240">⚠ WARNING</span></td>
+          <td class="num muted">&lt; 5.0%</td>
+        </tr>
+        </tbody>
+      </table>
+
+      <div class="unenriched-banner">
+        <div class="unenriched-icon">🔍</div>
+        <div>
+          <div class="unenriched-title">Missing Enrichment Detected</div>
+          <div class="unenriched-sub">Transactions where counterparty_country IS NULL or counterparty_name is blank — unenriched data reduces SAR quality</div>
+        </div>
+        <div class="unenriched-count">0</div>
+        <div style="margin-left:8px">
+          <div style="font-size:11px;color:var(--muted)">transactions</div>
+          <div style="font-size:16px;font-weight:700;color:#d29922">0.0%</div>
+        </div>
+      </div>
+
+      <div class="chart-wrap">
+        <div class="chart-title">NULL Rate by Field — Horizontal Bar Chart</div>
+        <canvas id="compChart" height="280"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       SECTION 2 — CONSISTENCY
+  ═══════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">2</div>
+      <div class="section-title">Consistency</div>
+      <span class="badge" style="background:#f8514920;color:#f85149;border:1px solid #f8514940">✕ Score: 57/100</span>
+    </div>
+    <div class="section-body">
+      <div class="check-cards-grid">
+        
+        <div class="check-card" style="border-left:3px solid #3fb950">
+          <div class="check-card-header">
+            <span class="check-icon" style="color:#3fb950">⊘</span>
+            <span class="check-label">Zero / Negative-Amount Transactions</span>
+            <span class="check-count" style="color:#3fb950">0</span>
+          </div>
+          <p class="check-explanation">Transactions with near-zero or negative amounts may indicate data entry errors or failed reversals.</p>
+          <div class="check-status-row"><span class="badge" style="background:#3fb95020;color:#3fb950;border:1px solid #3fb95040">✓ GOOD</span></div>
+        </div>
+        <div class="check-card" style="border-left:3px solid #3fb950">
+          <div class="check-card-header">
+            <span class="check-icon" style="color:#3fb950">⏭</span>
+            <span class="check-label">Future-Dated Transactions</span>
+            <span class="check-count" style="color:#3fb950">0</span>
+          </div>
+          <p class="check-explanation">Transactions dated after today suggest system clock errors or pre-booking entries not flagged correctly.</p>
+          <div class="check-status-row"><span class="badge" style="background:#3fb95020;color:#3fb950;border:1px solid #3fb95040">✓ GOOD</span></div>
+        </div>
+        <div class="check-card" style="border-left:3px solid #f85149">
+          <div class="check-card-header">
+            <span class="check-icon" style="color:#f85149">🔒</span>
+            <span class="check-label">Transactions on Closed Accounts</span>
+            <span class="check-count" style="color:#f85149">81</span>
+          </div>
+          <p class="check-explanation">Activity on closed accounts is a red flag for both data integrity and potential fraud.</p>
+          <div class="check-status-row"><span class="badge" style="background:#f8514920;color:#f85149;border:1px solid #f8514940">✕ CRITICAL</span></div>
+        </div>
+        <div class="check-card" style="border-left:3px solid #f85149">
+          <div class="check-card-header">
+            <span class="check-icon" style="color:#f85149">↩</span>
+            <span class="check-label">Failed Transactions (No Reversal)</span>
+            <span class="check-count" style="color:#f85149">2,967</span>
+          </div>
+          <p class="check-explanation">Failed transactions without a corresponding reversal record may indicate incomplete processing pipelines.</p>
+          <div class="check-status-row"><span class="badge" style="background:#f8514920;color:#f85149;border:1px solid #f8514940">✕ CRITICAL</span></div>
+        </div>
+        <div class="check-card" style="border-left:3px solid #3fb950">
+          <div class="check-card-header">
+            <span class="check-icon" style="color:#3fb950">⧉</span>
+            <span class="check-label">Duplicate Transaction IDs</span>
+            <span class="check-count" style="color:#3fb950">0</span>
+          </div>
+          <p class="check-explanation">Duplicate primary keys indicate ETL pipeline failures and corrupt referential integrity.</p>
+          <div class="check-status-row"><span class="badge" style="background:#3fb95020;color:#3fb950;border:1px solid #3fb95040">✓ GOOD</span></div>
+        </div>
+        <div class="check-card" style="border-left:3px solid #f85149">
+          <div class="check-card-header">
+            <span class="check-icon" style="color:#f85149">💱</span>
+            <span class="check-label">Large Non-USD Transactions (>$1M)</span>
+            <span class="check-count" style="color:#f85149">406</span>
+          </div>
+          <p class="check-explanation">Very high-value transactions in non-USD currency may warrant additional FX validation and source-of-funds review.</p>
+          <div class="check-status-row"><span class="badge" style="background:#f8514920;color:#f85149;border:1px solid #f8514940">✕ CRITICAL</span></div>
+        </div>
+        <div class="check-card" style="border-left:3px solid #3fb950">
+          <div class="check-card-header">
+            <span class="check-icon" style="color:#3fb950">⏪</span>
+            <span class="check-label">Processing Date Before Transaction Date</span>
+            <span class="check-count" style="color:#3fb950">0</span>
+          </div>
+          <p class="check-explanation">A processing timestamp earlier than the transaction date indicates a system time-sync or ETL ordering issue.</p>
+          <div class="check-status-row"><span class="badge" style="background:#3fb95020;color:#3fb950;border:1px solid #3fb95040">✓ GOOD</span></div>
+        </div>
+      </div>
+
+      <div class="chart-wrap">
+        <div class="chart-title">Consistency Issue Counts — Horizontal Bar Chart</div>
+        <canvas id="consChart" height="220"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       SECTION 3 — TIMELINESS
+  ═══════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">3</div>
+      <div class="section-title">Timeliness</div>
+      <span class="badge" style="background:#d2992220;color:#d29922;border:1px solid #d2992240">⚠ Score: 60/100</span>
+    </div>
+    <div class="section-body">
+      <div class="metric-cards-grid">
+        
+        <div class="metric-card" style="border-top:3px solid #3fb950">
+          <div class="metric-icon" style="color:#3fb950">📅</div>
+          <div class="metric-value" style="color:#3fb950">-1d ago</div>
+          <div class="metric-label">Data Freshness</div>
+          <div class="metric-sub">Last tx: 2026-03-12</div>
+          <span class="badge" style="background:#3fb95020;color:#3fb950;border:1px solid #3fb95040">✓ GOOD</span>
+        </div>
+        <div class="metric-card" style="border-top:3px solid #3fb950">
+          <div class="metric-icon" style="color:#3fb950">⚙</div>
+          <div class="metric-value" style="color:#3fb950">23.95h</div>
+          <div class="metric-label">Avg ETL Lag</div>
+          <div class="metric-sub">Tx date → processing date</div>
+          <span class="badge" style="background:#3fb95020;color:#3fb950;border:1px solid #3fb95040">✓ GOOD</span>
+        </div>
+        <div class="metric-card" style="border-top:3px solid #3fb950">
+          <div class="metric-icon" style="color:#3fb950">🔔</div>
+          <div class="metric-value" style="color:#3fb950">-173.01h</div>
+          <div class="metric-label">Alert Processing Lag</div>
+          <div class="metric-sub">Tx date → alert created</div>
+          <span class="badge" style="background:#3fb95020;color:#3fb950;border:1px solid #3fb95040">✓ GOOD</span>
+        </div>
+        <div class="metric-card" style="border-top:3px solid #f85149">
+          <div class="metric-icon" style="color:#f85149">⏳</div>
+          <div class="metric-value" style="color:#f85149">754</div>
+          <div class="metric-label">Stale New Alerts</div>
+          <div class="metric-sub">'new' status &gt; 30 days</div>
+          <span class="badge" style="background:#f8514920;color:#f85149;border:1px solid #f8514940">✕ CRITICAL</span>
+        </div>
+        <div class="metric-card" style="border-top:3px solid #f85149">
+          <div class="metric-icon" style="color:#f85149">📋</div>
+          <div class="metric-value" style="color:#f85149">464</div>
+          <div class="metric-label">Overdue Reviews</div>
+          <div class="metric-sub">'under_review' &gt; 14 days</div>
+          <span class="badge" style="background:#f8514920;color:#f85149;border:1px solid #f8514940">✕ CRITICAL</span>
+        </div>
+      </div>
+
+      <div class="gap-ok"><span style="color:#3fb950">✓ No monthly volume gaps detected — continuous data flow confirmed.</span></div>
+
+      <div class="chart-2col">
+        <div class="chart-wrap">
+          <div class="chart-title">Avg ETL Processing Lag by Week (Hours)</div>
+          <canvas id="lagChart" height="220"></canvas>
+        </div>
+        <div class="chart-wrap">
+          <div class="chart-title">Open Alert Age Buckets</div>
+          <canvas id="bucketChart" height="220"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       SECTION 4 — STATISTICAL ANOMALIES
+  ═══════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">4</div>
+      <div class="section-title">Statistical Anomalies</div>
+      <span class="badge" style="background:#d2992220;color:#d29922;border:1px solid #d2992240">⚠ Score: 60/100</span>
+    </div>
+    <div class="section-body">
+
+      <!-- Anomaly Summary Table -->
+      <div style="margin-bottom:28px">
+        <div class="chart-title" style="margin-bottom:12px">Anomaly Summary</div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Check</th>
+              <th>Finding</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            
+        <tr>
+          <td style="color:#e6edf3;font-weight:500">Volume Anomalies</td>
+          <td style="color:#f85149;font-weight:600">4 anomalous weeks</td>
+          <td><span class="badge" style="background:#f8514920;color:#f85149;border:1px solid #f8514940">✕ CRITICAL</span></td>
+        </tr>
+        <tr>
+          <td style="color:#e6edf3;font-weight:500">Amount Shift</td>
+          <td style="color:#3fb950;font-weight:600">-12.9% vs historical</td>
+          <td><span class="badge" style="background:#3fb95020;color:#3fb950;border:1px solid #3fb95040">✓ GOOD</span></td>
+        </tr>
+        <tr>
+          <td style="color:#e6edf3;font-weight:500">New Countries</td>
+          <td style="color:#3fb950;font-weight:600">0 new countries</td>
+          <td><span class="badge" style="background:#3fb95020;color:#3fb950;border:1px solid #3fb95040">✓ GOOD</span></td>
+        </tr>
+        <tr>
+          <td style="color:#e6edf3;font-weight:500">High-Value Spike</td>
+          <td style="color:#3fb950;font-weight:600">-0.4% vs historical</td>
+          <td><span class="badge" style="background:#3fb95020;color:#3fb950;border:1px solid #3fb95040">✓ GOOD</span></td>
+        </tr>
+        <tr>
+          <td style="color:#e6edf3;font-weight:500">Alert Rate</td>
+          <td style="color:#d29922;font-weight:600">5 anomalous weeks</td>
+          <td><span class="badge" style="background:#d2992220;color:#d29922;border:1px solid #d2992240">⚠ WARNING</span></td>
+        </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Volume Anomaly Chart -->
+      <div class="chart-wrap" style="margin-bottom:20px">
+        <div class="chart-title">Weekly Transaction Volume — Anomaly Detection (Mean ± 2σ Band)</div>
+        <canvas id="volChart" height="220"></canvas>
+      </div>
+
+      <!-- Amount Distribution Shift -->
+      <div class="stat-highlight">
+        <div style="font-size:12px;color:var(--muted);font-weight:600;letter-spacing:0.8px;text-transform:uppercase;margin-bottom:14px">Amount Distribution Shift — Last 30 Days vs Prior 11 Months</div>
+        <div class="stat-highlight-row">
+          <div class="stat-item">
+            <div class="stat-item-label">Recent Avg (30d)</div>
+            <div class="stat-item-value" style="color:#58a6ff">$73,397.55</div>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <div class="stat-item-label">Historical Avg</div>
+            <div class="stat-item-value" style="color:#8b949e">$84,289.83</div>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <div class="stat-item-label">Deviation</div>
+            <div class="stat-item-value" style="color:#3fb950">-12.9%</div>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <div class="stat-item-label">Status</div>
+            <div style="margin-top:8px"><span class="badge" style="background:#3fb95020;color:#3fb950;border:1px solid #3fb95040">✓ GOOD</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- New Countries Table -->
+      <div style="margin-top:20px;margin-bottom:20px">
+        <div class="chart-title" style="margin-bottom:12px">New Counterparty Countries (Last 30 Days vs Prior Period)</div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Country Code</th>
+              <th>First Seen</th>
+              <th style="text-align:right">Tx Count</th>
+              <th style="text-align:right">Total Amount</th>
+              <th>Risk Level</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="5" style="text-align:center;color:#3fb950;padding:16px">✓ No new counterparty countries detected in last 30 days</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="chart-2col">
+        <!-- High-Value Chart -->
+        <div class="chart-wrap">
+          <div class="chart-title">High-Value Transactions (&gt;$100K) by Week</div>
+          <div style="display:flex;gap:24px;margin-bottom:14px">
+            <div class="stat-item">
+              <div class="stat-item-label">Last 4wk Avg</div>
+              <div style="font-size:20px;font-weight:700;color:#58a6ff;font-family:'Courier New',monospace">84.8</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-item-label">Historical Avg</div>
+              <div style="font-size:20px;font-weight:700;color:var(--muted);font-family:'Courier New',monospace">85.1</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-item-label">Deviation</div>
+              <div style="font-size:20px;font-weight:700;color:#3fb950;font-family:'Courier New',monospace">-0.4%</div>
+            </div>
+          </div>
+          <canvas id="hvChart" height="200"></canvas>
+        </div>
+        <!-- Alert Rate Chart -->
+        <div class="chart-wrap">
+          <div class="chart-title">Alert Rate by Week (% of Transactions Flagged)</div>
+          <div style="margin-bottom:14px;font-size:12px;color:var(--muted)">
+            Anomalous weeks (±2σ): <span style="color:#d29922;font-weight:600">5</span>
+          </div>
+          <canvas id="rateChart" height="200"></canvas>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       QUALITY TREND
+  ═══════════════════════════════════════════════════ -->
+  <div class="trend-section">
+    <div class="trend-header">
+      <span style="font-size:20px">📆</span>
+      <div class="trend-title">Data Quality Over Time — 12-Week Trend</div>
+    </div>
+    <div class="trend-body">
+      <div class="chart-wrap" style="margin-bottom:28px">
+        <div class="chart-title">Weekly Quality Scores</div>
+        <canvas id="trendChart" height="200"></canvas>
+      </div>
+
+      <div class="chart-title" style="margin-bottom:12px">Recent Issues Log</div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Check</th>
+            <th>Issue</th>
+            <th>Severity</th>
+            <th>Resolved</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+        <tr>
+          <td class="mono muted">2026-03-11</td>
+          <td><span class="table-badge">Completeness</span></td>
+          <td style="color:#c9d1d9">847 transactions missing counterparty_country</td>
+          <td><span class="badge" style="background:#d2992220;color:#d29922;border:1px solid #d2992240">Warning</span></td>
+          <td><span class="badge" style="background:#f8514930;color:#f85149;font-size:11px;padding:2px 8px;border-radius:10px">No</span></td>
+        </tr>
+        <tr>
+          <td class="mono muted">2026-03-10</td>
+          <td><span class="table-badge">Timeliness</span></td>
+          <td style="color:#c9d1d9">ETL lag spiked to 31.2 hours during batch window</td>
+          <td><span class="badge" style="background:#d2992220;color:#d29922;border:1px solid #d2992240">Warning</span></td>
+          <td><span class="badge" style="background:#3fb950;color:#0d1117;font-size:11px;padding:2px 8px;border-radius:10px">Yes</span></td>
+        </tr>
+        <tr>
+          <td class="mono muted">2026-03-09</td>
+          <td><span class="table-badge">Consistency</span></td>
+          <td style="color:#c9d1d9">12 transactions detected on closed accounts</td>
+          <td><span class="badge" style="background:#f8514920;color:#f85149;border:1px solid #f8514940">Critical</span></td>
+          <td><span class="badge" style="background:#f8514930;color:#f85149;font-size:11px;padding:2px 8px;border-radius:10px">No</span></td>
+        </tr>
+        <tr>
+          <td class="mono muted">2026-03-08</td>
+          <td><span class="table-badge">Statistical</span></td>
+          <td style="color:#c9d1d9">Weekly volume 2.4 std dev above historical mean</td>
+          <td><span class="badge" style="background:#d2992220;color:#d29922;border:1px solid #d2992240">Warning</span></td>
+          <td><span class="badge" style="background:#3fb950;color:#0d1117;font-size:11px;padding:2px 8px;border-radius:10px">Yes</span></td>
+        </tr>
+        <tr>
+          <td class="mono muted">2026-03-07</td>
+          <td><span class="table-badge">Completeness</span></td>
+          <td style="color:#c9d1d9">alerts.assigned_to NULL rate exceeded 20% threshold</td>
+          <td><span class="badge" style="background:#d2992220;color:#d29922;border:1px solid #d2992240">Warning</span></td>
+          <td><span class="badge" style="background:#f8514930;color:#f85149;font-size:11px;padding:2px 8px;border-radius:10px">No</span></td>
+        </tr>
+        <tr>
+          <td class="mono muted">2026-03-05</td>
+          <td><span class="table-badge">Consistency</span></td>
+          <td style="color:#c9d1d9">3 future-dated transactions found (clock drift)</td>
+          <td><span class="badge" style="background:#d2992220;color:#d29922;border:1px solid #d2992240">Warning</span></td>
+          <td><span class="badge" style="background:#3fb950;color:#0d1117;font-size:11px;padding:2px 8px;border-radius:10px">Yes</span></td>
+        </tr>
+        <tr>
+          <td class="mono muted">2026-03-03</td>
+          <td><span class="table-badge">Statistical</span></td>
+          <td style="color:#c9d1d9">New high-risk counterparty country detected: MM</td>
+          <td><span class="badge" style="background:#f8514920;color:#f85149;border:1px solid #f8514940">Critical</span></td>
+          <td><span class="badge" style="background:#f8514930;color:#f85149;font-size:11px;padding:2px 8px;border-radius:10px">No</span></td>
+        </tr>
+        <tr>
+          <td class="mono muted">2026-03-01</td>
+          <td><span class="table-badge">Timeliness</span></td>
+          <td style="color:#c9d1d9">156 alerts in 'new' status over 30 days old</td>
+          <td><span class="badge" style="background:#d2992220;color:#d29922;border:1px solid #d2992240">Warning</span></td>
+          <td><span class="badge" style="background:#f8514930;color:#f85149;font-size:11px;padding:2px 8px;border-radius:10px">No</span></td>
+        </tr>
+        <tr>
+          <td class="mono muted">2026-02-27</td>
+          <td><span class="table-badge">Completeness</span></td>
+          <td style="color:#c9d1d9">customers.nationality NULL rate rose to 8.3%</td>
+          <td><span class="badge" style="background:#d2992220;color:#d29922;border:1px solid #d2992240">Warning</span></td>
+          <td><span class="badge" style="background:#3fb950;color:#0d1117;font-size:11px;padding:2px 8px;border-radius:10px">Yes</span></td>
+        </tr>
+        <tr>
+          <td class="mono muted">2026-02-25</td>
+          <td><span class="table-badge">Statistical</span></td>
+          <td style="color:#c9d1d9">Alert rate dropped 3.1 std devs below mean — possible rule failure</td>
+          <td><span class="badge" style="background:#f8514920;color:#f85149;border:1px solid #f8514940">Critical</span></td>
+          <td><span class="badge" style="background:#3fb950;color:#0d1117;font-size:11px;padding:2px 8px;border-radius:10px">Yes</span></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<footer class="footer">
+  <div>TransactGuard AML Data Quality Monitor &mdash; Auto-generated on Mar 12, 2026 02:15 UTC</div>
+  <div style="margin-top:4px">
+    <a href="executive_dashboard.html">Executive Dashboard</a>
+    &nbsp;·&nbsp;
+    <a href="analyst_dashboard.html">Analyst Dashboard</a>
+    &nbsp;·&nbsp;
+    <a href="customer_risk_report.html">Customer Risk</a>
+    &nbsp;·&nbsp;
+    <a href="monthly_sar_summary.html">SAR Summary</a>
+    &nbsp;·&nbsp;
+    <a href="rule_effectiveness_report.html">Rule Effectiveness</a>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════════════════════
+     CHARTS
+══════════════════════════════════════════════════════ -->
+<script>
+const D = {
+  "comp_labels": [
+    "transactions.counterparty_name",
+    "transactions.counterparty_country",
+    "transactions.description",
+    "transactions.channel",
+    "transactions.currency",
+    "customers.nationality",
+    "customers.date_of_birth",
+    "customers.email",
+    "accounts.closed_at (active ac",
+    "alerts.assigned_to",
+    "alerts.notes"
+  ],
+  "comp_values": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    41.55,
+    12.05
+  ],
+  "comp_colors": [
+    "#3fb950",
+    "#3fb950",
+    "#3fb950",
+    "#3fb950",
+    "#3fb950",
+    "#3fb950",
+    "#3fb950",
+    "#3fb950",
+    "#3fb950",
+    "#f85149",
+    "#d29922"
+  ],
+  "cons_labels": [
+    "Zero / Negative-Amount Transac",
+    "Future-Dated Transactions",
+    "Transactions on Closed Account",
+    "Failed Transactions (No Revers",
+    "Duplicate Transaction IDs",
+    "Large Non-USD Transactions (>$",
+    "Processing Date Before Transac"
+  ],
+  "cons_values": [
+    0,
+    0,
+    81,
+    2967,
+    0,
+    406,
+    0
+  ],
+  "cons_colors": [
+    "#3fb950",
+    "#3fb950",
+    "#f85149",
+    "#f85149",
+    "#3fb950",
+    "#f85149",
+    "#3fb950"
+  ],
+  "weekly_lag_labels": [
+    "2025-W10",
+    "2025-W11",
+    "2025-W12",
+    "2025-W13",
+    "2025-W14",
+    "2025-W15",
+    "2025-W16",
+    "2025-W17",
+    "2025-W18",
+    "2025-W19",
+    "2025-W20",
+    "2025-W21",
+    "2025-W22",
+    "2025-W23",
+    "2025-W24",
+    "2025-W25",
+    "2025-W26",
+    "2025-W27",
+    "2025-W28",
+    "2025-W29",
+    "2025-W30",
+    "2025-W31",
+    "2025-W32",
+    "2025-W33",
+    "2025-W34",
+    "2025-W35",
+    "2025-W36",
+    "2025-W37",
+    "2025-W38",
+    "2025-W39",
+    "2025-W40",
+    "2025-W41",
+    "2025-W42",
+    "2025-W43",
+    "2025-W44",
+    "2025-W45",
+    "2025-W46",
+    "2025-W47",
+    "2025-W48",
+    "2025-W49",
+    "2025-W50",
+    "2025-W51",
+    "2025-W52",
+    "2026-W00",
+    "2026-W01",
+    "2026-W02",
+    "2026-W03",
+    "2026-W04",
+    "2026-W05",
+    "2026-W06",
+    "2026-W07",
+    "2026-W08"
+  ],
+  "weekly_lag_values": [
+    25.0,
+    23.71,
+    24.23,
+    24.54,
+    24.11,
+    24.14,
+    24.29,
+    22.79,
+    24.75,
+    23.96,
+    22.94,
+    24.03,
+    23.73,
+    23.57,
+    23.86,
+    23.95,
+    24.21,
+    24.15,
+    23.97,
+    24.93,
+    24.67,
+    23.66,
+    23.42,
+    24.75,
+    23.82,
+    22.94,
+    24.33,
+    23.51,
+    23.91,
+    23.89,
+    23.99,
+    24.12,
+    23.7,
+    23.22,
+    24.73,
+    24.48,
+    23.59,
+    23.83,
+    24.05,
+    24.47,
+    24.62,
+    23.68,
+    23.44,
+    23.84,
+    24.76,
+    24.37,
+    23.7,
+    23.74,
+    24.68,
+    24.24,
+    23.71,
+    23.34
+  ],
+  "bucket_labels": [
+    "1-7 days",
+    "7-14 days",
+    "14-30 days",
+    "30+ days"
+  ],
+  "bucket_counts": [
+    26,
+    25,
+    64,
+    1199
+  ],
+  "vol_labels": [
+    "2025-W10",
+    "2025-W11",
+    "2025-W12",
+    "2025-W13",
+    "2025-W14",
+    "2025-W15",
+    "2025-W16",
+    "2025-W17",
+    "2025-W18",
+    "2025-W19",
+    "2025-W20",
+    "2025-W21",
+    "2025-W22",
+    "2025-W23",
+    "2025-W24",
+    "2025-W25",
+    "2025-W26",
+    "2025-W27",
+    "2025-W28",
+    "2025-W29",
+    "2025-W30",
+    "2025-W31",
+    "2025-W32",
+    "2025-W33",
+    "2025-W34",
+    "2025-W35",
+    "2025-W36",
+    "2025-W37",
+    "2025-W38",
+    "2025-W39",
+    "2025-W40",
+    "2025-W41",
+    "2025-W42",
+    "2025-W43",
+    "2025-W44",
+    "2025-W45",
+    "2025-W46",
+    "2025-W47",
+    "2025-W48",
+    "2025-W49",
+    "2025-W50",
+    "2025-W51",
+    "2025-W52",
+    "2026-W00",
+    "2026-W01",
+    "2026-W02",
+    "2026-W03",
+    "2026-W04",
+    "2026-W05",
+    "2026-W06",
+    "2026-W07",
+    "2026-W08",
+    "2026-W09",
+    "2026-W10"
+  ],
+  "vol_values": [
+    644,
+    910,
+    867,
+    892,
+    969,
+    936,
+    952,
+    901,
+    891,
+    935,
+    927,
+    943,
+    925,
+    960,
+    928,
+    935,
+    981,
+    903,
+    937,
+    908,
+    934,
+    898,
+    950,
+    935,
+    934,
+    971,
+    915,
+    901,
+    875,
+    987,
+    888,
+    942,
+    933,
+    939,
+    889,
+    924,
+    927,
+    893,
+    901,
+    836,
+    914,
+    955,
+    410,
+    554,
+    887,
+    1089,
+    1128,
+    1104,
+    1099,
+    1134,
+    1086,
+    1190,
+    1143,
+    691
+  ],
+  "vol_mean": [
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9,
+    925.9
+  ],
+  "vol_upper": [
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4,
+    1183.4
+  ],
+  "vol_lower": [
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4,
+    668.4
+  ],
+  "hv_labels": [
+    "2025-W10",
+    "2025-W11",
+    "2025-W12",
+    "2025-W13",
+    "2025-W14",
+    "2025-W15",
+    "2025-W16",
+    "2025-W17",
+    "2025-W18",
+    "2025-W19",
+    "2025-W20",
+    "2025-W21",
+    "2025-W22",
+    "2025-W23",
+    "2025-W24",
+    "2025-W25",
+    "2025-W26",
+    "2025-W27",
+    "2025-W28",
+    "2025-W29",
+    "2025-W30",
+    "2025-W31",
+    "2025-W32",
+    "2025-W33",
+    "2025-W34",
+    "2025-W35",
+    "2025-W36",
+    "2025-W37",
+    "2025-W38",
+    "2025-W39",
+    "2025-W40",
+    "2025-W41",
+    "2025-W42",
+    "2025-W43",
+    "2025-W44",
+    "2025-W45",
+    "2025-W46",
+    "2025-W47",
+    "2025-W48",
+    "2025-W49",
+    "2025-W50",
+    "2025-W51",
+    "2025-W52",
+    "2026-W00",
+    "2026-W01",
+    "2026-W02",
+    "2026-W03",
+    "2026-W04",
+    "2026-W05",
+    "2026-W06",
+    "2026-W07",
+    "2026-W08",
+    "2026-W09",
+    "2026-W10"
+  ],
+  "hv_values": [
+    70,
+    91,
+    93,
+    79,
+    103,
+    77,
+    106,
+    106,
+    92,
+    74,
+    78,
+    90,
+    84,
+    80,
+    84,
+    85,
+    85,
+    81,
+    97,
+    77,
+    83,
+    78,
+    84,
+    87,
+    84,
+    81,
+    74,
+    90,
+    82,
+    90,
+    85,
+    82,
+    79,
+    64,
+    85,
+    84,
+    93,
+    75,
+    98,
+    72,
+    82,
+    102,
+    43,
+    52,
+    82,
+    103,
+    103,
+    100,
+    91,
+    113,
+    97,
+    94,
+    98,
+    50
+  ],
+  "rate_labels": [
+    "2025-W10",
+    "2025-W11",
+    "2025-W12",
+    "2025-W13",
+    "2025-W14",
+    "2025-W15",
+    "2025-W16",
+    "2025-W17",
+    "2025-W18",
+    "2025-W19",
+    "2025-W20",
+    "2025-W21",
+    "2025-W22",
+    "2025-W23",
+    "2025-W24",
+    "2025-W25",
+    "2025-W26",
+    "2025-W27",
+    "2025-W28",
+    "2025-W29",
+    "2025-W30",
+    "2025-W31",
+    "2025-W32",
+    "2025-W33",
+    "2025-W34",
+    "2025-W35",
+    "2025-W36",
+    "2025-W37",
+    "2025-W38",
+    "2025-W39",
+    "2025-W40",
+    "2025-W41",
+    "2025-W42",
+    "2025-W43",
+    "2025-W44",
+    "2025-W45",
+    "2025-W46",
+    "2025-W47",
+    "2025-W48",
+    "2025-W49",
+    "2025-W50",
+    "2025-W51",
+    "2025-W52",
+    "2026-W00",
+    "2026-W01",
+    "2026-W02",
+    "2026-W03",
+    "2026-W04",
+    "2026-W05",
+    "2026-W06",
+    "2026-W07",
+    "2026-W08",
+    "2026-W09",
+    "2026-W10"
+  ],
+  "rate_values": [
+    4.35,
+    4.51,
+    4.15,
+    3.03,
+    3.61,
+    3.42,
+    3.78,
+    4.88,
+    2.69,
+    3.85,
+    3.56,
+    5.51,
+    4.11,
+    4.06,
+    3.77,
+    4.49,
+    3.98,
+    3.21,
+    4.38,
+    4.3,
+    4.28,
+    4.68,
+    4.0,
+    2.78,
+    4.07,
+    4.74,
+    3.93,
+    4.22,
+    3.89,
+    3.24,
+    3.15,
+    5.52,
+    3.75,
+    4.37,
+    3.6,
+    4.22,
+    3.56,
+    3.36,
+    4.22,
+    4.19,
+    4.16,
+    4.08,
+    5.37,
+    5.42,
+    4.17,
+    3.86,
+    4.17,
+    4.17,
+    3.09,
+    3.26,
+    4.42,
+    4.03,
+    3.24,
+    5.21
+  ],
+  "trend_labels": [
+    "W51 '25",
+    "W52 '25",
+    "W01 '26",
+    "W02 '26",
+    "W03 '26",
+    "W04 '26",
+    "W05 '26",
+    "W06 '26",
+    "W07 '26",
+    "W08 '26",
+    "W09 '26",
+    "W10 '26"
+  ],
+  "trend_comp": [
+    91.5,
+    88.3,
+    90.2,
+    90.2,
+    93.7,
+    93.8,
+    95.5,
+    91.0,
+    93.4,
+    91.5,
+    93.0,
+    95.1
+  ],
+  "trend_cons": [
+    49.9,
+    51.3,
+    54.4,
+    54.2,
+    52.6,
+    55.2,
+    57.0,
+    52.5,
+    57.7,
+    57.5,
+    55.7,
+    57.1
+  ],
+  "trend_overall": [
+    66.4,
+    65.9,
+    67.4,
+    67.3,
+    67.9,
+    68.7,
+    69.8,
+    67.0,
+    69.3,
+    68.7,
+    68.6,
+    69.7
+  ]
+};
+
+const TOOLTIP_BG = '#1c2128';
+const TOOLTIP_BORDER = '#30363d';
+const GRID_COLOR = '#21262d';
+const LABEL_COLOR = '#8b949e';
+const fontFamily = "'Inter', sans-serif";
+
+Chart.defaults.color = LABEL_COLOR;
+Chart.defaults.font.family = fontFamily;
+Chart.defaults.font.size = 12;
+
+function baseOpts(title) {
+  return {
+    responsive: true,
+    maintainAspectRatio: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: TOOLTIP_BG,
+        borderColor: TOOLTIP_BORDER,
+        borderWidth: 1,
+        titleColor: '#e6edf3',
+        bodyColor: '#c9d1d9',
+        padding: 10,
+        cornerRadius: 6,
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: GRID_COLOR },
+        ticks: { color: LABEL_COLOR, maxRotation: 45 }
+      },
+      y: {
+        grid: { color: GRID_COLOR },
+        ticks: { color: LABEL_COLOR }
+      }
+    }
+  };
+}
+
+// ── Completeness NULL rates (horizontal bar)
+new Chart(document.getElementById('compChart'), {
+  type: 'bar',
+  data: {
+    labels: D.comp_labels,
+    datasets: [{
+      label: 'NULL %',
+      data: D.comp_values,
+      backgroundColor: D.comp_colors.map(c => c + '99'),
+      borderColor: D.comp_colors,
+      borderWidth: 1.5,
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    ...baseOpts('NULL Rate'),
+    indexAxis: 'y',
+    plugins: {
+      ...baseOpts().plugins,
+      tooltip: {
+        ...baseOpts().plugins.tooltip,
+        callbacks: {
+          label: ctx => ` ${ctx.parsed.x.toFixed(2)}%`
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: GRID_COLOR },
+        ticks: { color: LABEL_COLOR, callback: v => v + '%' },
+        title: { display: true, text: 'NULL Percentage', color: LABEL_COLOR }
+      },
+      y: { grid: { display: false }, ticks: { color: '#c9d1d9', font: { size: 11 } } }
+    }
+  }
+});
+
+// ── Consistency issues (horizontal bar)
+new Chart(document.getElementById('consChart'), {
+  type: 'bar',
+  data: {
+    labels: D.cons_labels,
+    datasets: [{
+      label: 'Count',
+      data: D.cons_values,
+      backgroundColor: D.cons_colors.map(c => c + '99'),
+      borderColor: D.cons_colors,
+      borderWidth: 1.5,
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    ...baseOpts('Issues'),
+    indexAxis: 'y',
+    scales: {
+      x: {
+        grid: { color: GRID_COLOR },
+        ticks: { color: LABEL_COLOR },
+        title: { display: true, text: 'Count', color: LABEL_COLOR }
+      },
+      y: { grid: { display: false }, ticks: { color: '#c9d1d9', font: { size: 11 } } }
+    }
+  }
+});
+
+// ── ETL Lag line chart
+new Chart(document.getElementById('lagChart'), {
+  type: 'line',
+  data: {
+    labels: D.weekly_lag_labels,
+    datasets: [{
+      label: 'Avg ETL Lag (hrs)',
+      data: D.weekly_lag_values,
+      borderColor: '#58a6ff',
+      backgroundColor: '#58a6ff18',
+      fill: true,
+      tension: 0.4,
+      pointRadius: 2,
+      pointHoverRadius: 5,
+    }]
+  },
+  options: {
+    ...baseOpts('ETL Lag'),
+    plugins: {
+      ...baseOpts().plugins,
+      annotation: { annotations: {} },
+      tooltip: {
+        callbacks: { label: ctx => ` ${ctx.parsed.y.toFixed(1)} hrs` }
+      }
+    },
+    scales: {
+      x: { display: false },
+      y: {
+        grid: { color: GRID_COLOR },
+        ticks: { color: LABEL_COLOR, callback: v => v + 'h' }
+      }
+    }
+  }
+});
+
+// ── Alert age buckets (bar)
+new Chart(document.getElementById('bucketChart'), {
+  type: 'bar',
+  data: {
+    labels: D.bucket_labels,
+    datasets: [{
+      label: 'Open Alerts',
+      data: D.bucket_counts,
+      backgroundColor: ['#3fb95099','#d2992299','#d2992299','#f8514999'],
+      borderColor: ['#3fb950','#d29922','#d29922','#f85149'],
+      borderWidth: 1.5,
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    ...baseOpts('Buckets'),
+    scales: {
+      x: { grid: { display: false }, ticks: { color: '#c9d1d9' } },
+      y: { grid: { color: GRID_COLOR }, ticks: { color: LABEL_COLOR } }
+    }
+  }
+});
+
+// ── Volume anomaly chart with band
+const volCtx = document.getElementById('volChart').getContext('2d');
+new Chart(volCtx, {
+  type: 'line',
+  data: {
+    labels: D.vol_labels,
+    datasets: [
+      {
+        label: 'Mean + 2σ',
+        data: D.vol_upper,
+        borderColor: '#f8514940',
+        borderWidth: 1,
+        borderDash: [4, 4],
+        pointRadius: 0,
+        fill: '+1',
+        backgroundColor: '#f8514910',
+      },
+      {
+        label: 'Mean - 2σ',
+        data: D.vol_lower,
+        borderColor: '#f8514940',
+        borderWidth: 1,
+        borderDash: [4, 4],
+        pointRadius: 0,
+        fill: false,
+      },
+      {
+        label: 'Mean',
+        data: D.vol_mean,
+        borderColor: '#58a6ff60',
+        borderWidth: 1,
+        borderDash: [6, 3],
+        pointRadius: 0,
+        fill: false,
+      },
+      {
+        label: 'Weekly Volume',
+        data: D.vol_values,
+        borderColor: '#58a6ff',
+        backgroundColor: '#58a6ff18',
+        borderWidth: 2,
+        pointRadius: ctx => {
+          const v = D.vol_values[ctx.dataIndex];
+          return (v > D.vol_upper[0] || v < D.vol_lower[0]) ? 6 : 2;
+        },
+        pointBackgroundColor: ctx => {
+          const v = D.vol_values[ctx.dataIndex];
+          return (v > D.vol_upper[0] || v < D.vol_lower[0]) ? '#f85149' : '#58a6ff';
+        },
+        tension: 0.4,
+        fill: false,
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: true,
+    plugins: {
+      legend: {
+        display: true,
+        labels: { color: LABEL_COLOR, usePointStyle: true, pointStyleWidth: 10 }
+      },
+      tooltip: {
+        backgroundColor: TOOLTIP_BG,
+        borderColor: TOOLTIP_BORDER,
+        borderWidth: 1,
+        titleColor: '#e6edf3',
+        bodyColor: '#c9d1d9',
+        padding: 10,
+        cornerRadius: 6,
+      }
+    },
+    scales: {
+      x: { display: false },
+      y: {
+        grid: { color: GRID_COLOR },
+        ticks: { color: LABEL_COLOR }
+      }
+    }
+  }
+});
+
+// ── High-value chart
+new Chart(document.getElementById('hvChart'), {
+  type: 'bar',
+  data: {
+    labels: D.hv_labels,
+    datasets: [{
+      label: '>$100K Transactions',
+      data: D.hv_values,
+      backgroundColor: '#d2992266',
+      borderColor: '#d29922',
+      borderWidth: 1.5,
+      borderRadius: 3,
+    }]
+  },
+  options: {
+    ...baseOpts('HV'),
+    scales: {
+      x: { display: false },
+      y: { grid: { color: GRID_COLOR }, ticks: { color: LABEL_COLOR } }
+    }
+  }
+});
+
+// ── Alert rate chart
+new Chart(document.getElementById('rateChart'), {
+  type: 'line',
+  data: {
+    labels: D.rate_labels,
+    datasets: [{
+      label: 'Alert Rate %',
+      data: D.rate_values,
+      borderColor: '#d29922',
+      backgroundColor: '#d2992218',
+      fill: true,
+      tension: 0.4,
+      pointRadius: 2,
+      pointHoverRadius: 5,
+    }]
+  },
+  options: {
+    ...baseOpts('Rate'),
+    scales: {
+      x: { display: false },
+      y: {
+        grid: { color: GRID_COLOR },
+        ticks: { color: LABEL_COLOR, callback: v => v.toFixed(1) + '%' }
+      }
+    },
+    plugins: {
+      ...baseOpts().plugins,
+      tooltip: {
+        callbacks: { label: ctx => ` ${ctx.parsed.y.toFixed(2)}%` }
+      }
+    }
+  }
+});
+
+// ── Quality Trend chart
+new Chart(document.getElementById('trendChart'), {
+  type: 'line',
+  data: {
+    labels: D.trend_labels,
+    datasets: [
+      {
+        label: 'Overall Score',
+        data: D.trend_overall,
+        borderColor: '#58a6ff',
+        backgroundColor: '#58a6ff18',
+        borderWidth: 2.5,
+        tension: 0.4,
+        fill: false,
+        pointRadius: 3,
+      },
+      {
+        label: 'Completeness',
+        data: D.trend_comp,
+        borderColor: '#3fb950',
+        borderWidth: 1.5,
+        tension: 0.4,
+        fill: false,
+        pointRadius: 2,
+        borderDash: [4, 3],
+      },
+      {
+        label: 'Consistency',
+        data: D.trend_cons,
+        borderColor: '#d29922',
+        borderWidth: 1.5,
+        tension: 0.4,
+        fill: false,
+        pointRadius: 2,
+        borderDash: [4, 3],
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: true,
+    plugins: {
+      legend: {
+        display: true,
+        labels: { color: LABEL_COLOR, usePointStyle: true }
+      },
+      tooltip: {
+        backgroundColor: TOOLTIP_BG,
+        borderColor: TOOLTIP_BORDER,
+        borderWidth: 1,
+        titleColor: '#e6edf3',
+        bodyColor: '#c9d1d9',
+        padding: 10,
+        cornerRadius: 6,
+        callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}` }
+      }
+    },
+    scales: {
+      x: { grid: { color: GRID_COLOR }, ticks: { color: LABEL_COLOR } },
+      y: {
+        grid: { color: GRID_COLOR },
+        ticks: { color: LABEL_COLOR, callback: v => v + '/100' },
+        min: 50,
+        max: 100
+      }
+    }
+  }
+});
+</script>
+</body>
+</html>

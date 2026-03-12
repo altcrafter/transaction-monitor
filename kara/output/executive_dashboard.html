@@ -1,0 +1,1662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TransactGuard AML — Executive Intelligence Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+/* ===== RESET & BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:           #0d1117;
+  --card:         #161b22;
+  --card-hover:   #1c2128;
+  --border:       #30363d;
+  --border-subtle:#21262d;
+  --text-primary: #e6edf3;
+  --text-secondary:#8b949e;
+  --text-muted:   #6e7681;
+  --blue:         #58a6ff;
+  --green:        #3fb950;
+  --red:          #f78166;
+  --orange:       #f0883e;
+  --yellow:       #d29922;
+  --purple:       #bc8cff;
+  --critical:     #f85149;
+  --high:         #f0883e;
+  --medium:       #d29922;
+  --low:          #3fb950;
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ===== HEADER ===== */
+.header {
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+}
+
+.header-logo .logo-icon {
+  font-size: 22px;
+}
+
+.header-logo .logo-accent {
+  color: var(--blue);
+}
+
+.header-center {
+  text-align: center;
+  flex: 1;
+  padding: 0 24px;
+}
+
+.header-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.5px;
+}
+
+.header-subtitle {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.header-meta {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.header-meta .date-range {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.header-meta .generated {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Gradient accent bar */
+.header-bar {
+  height: 3px;
+  background: linear-gradient(90deg, #58a6ff 0%, #3fb950 30%, #d29922 60%, #f78166 100%);
+}
+
+/* ===== MAIN CONTENT ===== */
+.main {
+  padding: 28px 32px 48px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+/* ===== SECTION TITLE ===== */
+.section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-subtle);
+}
+
+/* ===== KPI CARDS ===== */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+@media (max-width: 1400px) {
+  .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+.kpi-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s, transform 0.2s;
+  cursor: default;
+}
+
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: 10px 10px 0 0;
+}
+
+.kpi-card.blue::before  { background: var(--blue); }
+.kpi-card.green::before { background: var(--green); }
+.kpi-card.red::before   { background: var(--red); }
+.kpi-card.yellow::before { background: var(--yellow); }
+.kpi-card.orange::before { background: var(--orange); }
+.kpi-card.purple::before { background: var(--purple); }
+
+.kpi-card:hover {
+  border-color: var(--blue);
+  transform: translateY(-2px);
+}
+
+.kpi-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.kpi-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.kpi-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 6px;
+}
+
+.kpi-value {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -1px;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.kpi-sub {
+  font-size: 11px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.kpi-trend-up   { color: var(--green); }
+.kpi-trend-down { color: var(--red); }
+
+/* Mini sparkline canvas */
+.kpi-sparkline {
+  width: 100%;
+  height: 36px;
+  margin-top: 10px;
+}
+
+/* Mini severity bar */
+.sev-bar {
+  margin-top: 10px;
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  display: flex;
+  gap: 2px;
+}
+
+.sev-seg {
+  height: 100%;
+  border-radius: 2px;
+  transition: opacity 0.2s;
+}
+
+.sev-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.sev-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.sev-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+}
+
+/* ===== CHART CARDS ===== */
+.chart-row {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.chart-row-60-40 { grid-template-columns: 60fr 40fr; }
+.chart-row-50-50 { grid-template-columns: 1fr 1fr; }
+
+@media (max-width: 1100px) {
+  .chart-row-60-40,
+  .chart-row-50-50 { grid-template-columns: 1fr; }
+}
+
+.chart-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chart-card-subtitle {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 18px;
+}
+
+.chart-wrapper {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ===== FUNNEL CHART ===== */
+.funnel-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 8px 0;
+}
+
+.funnel-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.funnel-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  width: 110px;
+  flex-shrink: 0;
+}
+
+.funnel-bar-wrap {
+  flex: 1;
+  background: var(--border-subtle);
+  border-radius: 4px;
+  height: 28px;
+  overflow: hidden;
+}
+
+.funnel-bar {
+  height: 100%;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  padding-left: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+  min-width: 40px;
+  white-space: nowrap;
+}
+
+.funnel-pct {
+  font-size: 11px;
+  color: var(--text-muted);
+  width: 38px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ===== RECENT ALERTS TABLE ===== */
+.table-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.table-header {
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.table-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.table-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+thead th {
+  background: #1c2128;
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+
+thead th:hover { color: var(--blue); }
+
+thead th .sort-icon {
+  display: inline-block;
+  margin-left: 4px;
+  opacity: 0.4;
+  font-size: 10px;
+}
+
+thead th.sorted .sort-icon { opacity: 1; color: var(--blue); }
+
+tbody tr:nth-child(even) { background: var(--card-hover); }
+tbody tr:nth-child(odd)  { background: var(--card); }
+
+tbody tr {
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 0.15s;
+}
+
+tbody tr:hover {
+  background: #22303f !important;
+}
+
+tbody td {
+  padding: 11px 16px;
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+
+.td-id { font-family: 'Courier New', monospace; font-size: 12px; color: var(--text-secondary); }
+.td-date { color: var(--text-secondary); white-space: nowrap; }
+.td-customer { font-weight: 500; }
+.td-amount { font-weight: 600; color: var(--text-primary); text-align: right; font-family: 'Courier New', monospace; }
+.td-rule { color: var(--text-secondary); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.td-assigned { color: var(--text-muted); font-size: 12px; }
+
+/* ===== BADGES ===== */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.badge::before {
+  content: '';
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.8;
+}
+
+/* Severity badges */
+.badge-critical { background: rgba(248,81,73,0.15);  color: #f85149; border: 1px solid rgba(248,81,73,0.3); }
+.badge-high     { background: rgba(240,136,62,0.15); color: #f0883e; border: 1px solid rgba(240,136,62,0.3); }
+.badge-medium   { background: rgba(210,153,34,0.15); color: #d29922; border: 1px solid rgba(210,153,34,0.3); }
+.badge-low      { background: rgba(63,185,80,0.15);  color: #3fb950; border: 1px solid rgba(63,185,80,0.3); }
+
+/* Status badges */
+.badge-new            { background: rgba(88,166,255,0.12); color: #58a6ff; border: 1px solid rgba(88,166,255,0.25); }
+.badge-under_review   { background: rgba(210,153,34,0.12); color: #d29922; border: 1px solid rgba(210,153,34,0.25); }
+.badge-escalated      { background: rgba(248,81,73,0.12);  color: #f85149; border: 1px solid rgba(248,81,73,0.25); }
+.badge-true_positive  { background: rgba(63,185,80,0.12);  color: #3fb950; border: 1px solid rgba(63,185,80,0.25); }
+.badge-false_positive { background: rgba(110,118,129,0.12);color: #8b949e; border: 1px solid rgba(110,118,129,0.25); }
+
+/* ===== RULES TABLE ===== */
+.rules-table-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.rules-table-card table { font-size: 12px; }
+.rules-table-card thead th { font-size: 10px; padding: 10px 14px; }
+.rules-table-card tbody td { padding: 9px 14px; }
+
+.perf-bar-wrap {
+  width: 80px;
+  height: 6px;
+  background: var(--border-subtle);
+  border-radius: 3px;
+  overflow: hidden;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.perf-bar {
+  height: 100%;
+  border-radius: 3px;
+}
+
+.f1-good   { color: var(--green); font-weight: 600; }
+.f1-ok     { color: var(--yellow); font-weight: 600; }
+.f1-poor   { color: var(--red); font-weight: 600; }
+
+.cat-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.cat-structuring { background: rgba(88,166,255,0.12); color: #58a6ff; }
+.cat-velocity    { background: rgba(240,136,62,0.12);  color: #f0883e; }
+.cat-geographic  { background: rgba(63,185,80,0.12);   color: #3fb950; }
+.cat-behavior    { background: rgba(210,153,34,0.12);  color: #d29922; }
+.cat-network     { background: rgba(188,140,255,0.12); color: #bc8cff; }
+
+/* ===== WORKLOAD SECTION ===== */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+
+/* ===== FOOTER ===== */
+.footer {
+  text-align: center;
+  padding: 32px;
+  color: var(--text-muted);
+  font-size: 11px;
+  border-top: 1px solid var(--border-subtle);
+  margin-top: 40px;
+  letter-spacing: 0.5px;
+}
+
+.footer span { color: var(--blue); font-weight: 500; }
+</style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header>
+  <div class="header">
+    <div class="header-logo">
+      <span class="logo-icon">🔍</span>
+      <span>Transact<span class="logo-accent">Guard</span> AML</span>
+    </div>
+    <div class="header-center">
+      <div class="header-title">Executive Intelligence Dashboard</div>
+      <div class="header-subtitle">Anti-Money Laundering · Compliance Analytics</div>
+    </div>
+    <div class="header-meta">
+      <div class="date-range">Data range: Mar 2025 – Mar 2026</div>
+      <div class="generated">Generated: Mar 12, 2026</div>
+    </div>
+  </div>
+  <div class="header-bar"></div>
+</header>
+
+<!-- ===== MAIN ===== -->
+<main class="main">
+
+  <!-- KPI CARDS -->
+  <div class="section-title">Key Performance Indicators</div>
+  <div class="kpi-grid">
+
+    <!-- KPI 1: Total Transactions -->
+    <div class="kpi-card blue">
+      <div class="kpi-top">
+        <div>
+          <div class="kpi-label">Total Transactions</div>
+          <div class="kpi-value">50,000</div>
+        </div>
+        <div class="kpi-icon">💳</div>
+      </div>
+      <canvas class="kpi-sparkline" id="sparkTxn"></canvas>
+      <div class="kpi-sub">Last 12 weeks trend</div>
+    </div>
+
+    <!-- KPI 2: Active Alerts -->
+    <div class="kpi-card red">
+      <div class="kpi-top">
+        <div>
+          <div class="kpi-label">Active Alerts</div>
+          <div class="kpi-value">1,610</div>
+        </div>
+        <div class="kpi-icon">🚨</div>
+      </div>
+      <div class="sev-bar" id="sevBar"></div>
+      <div class="sev-legend" id="sevLegend"></div>
+    </div>
+
+    <!-- KPI 3: Alert Closure Rate -->
+    <div class="kpi-card green">
+      <div class="kpi-top">
+        <div>
+          <div class="kpi-label">Alert Closure Rate</div>
+          <div class="kpi-value">19.5%</div>
+        </div>
+        <div class="kpi-icon">✅</div>
+      </div>
+      <div class="kpi-sub">
+        <span class="kpi-trend-up">↑</span>
+        390 of 2,000 alerts closed
+      </div>
+    </div>
+
+    <!-- KPI 4: Avg Resolution Time -->
+    <div class="kpi-card yellow">
+      <div class="kpi-top">
+        <div>
+          <div class="kpi-label">Avg Resolution Time</div>
+          <div class="kpi-value">0.3d</div>
+        </div>
+        <div class="kpi-icon">⏱️</div>
+      </div>
+      <div class="kpi-sub">Days from creation to closure</div>
+    </div>
+
+    <!-- KPI 5: Total Flagged Amount -->
+    <div class="kpi-card orange">
+      <div class="kpi-top">
+        <div>
+          <div class="kpi-label">Total Flagged Amount</div>
+          <div class="kpi-value">$162.6M</div>
+        </div>
+        <div class="kpi-icon">💰</div>
+      </div>
+      <div class="kpi-sub">Across all 2,000 alerts</div>
+    </div>
+
+    <!-- KPI 6: High-Risk Customers -->
+    <div class="kpi-card purple">
+      <div class="kpi-top">
+        <div>
+          <div class="kpi-label">High-Risk Customers</div>
+          <div class="kpi-value">200</div>
+        </div>
+        <div class="kpi-icon">⚠️</div>
+      </div>
+      <div class="kpi-sub">Rated high or critical risk</div>
+    </div>
+
+  </div><!-- /kpi-grid -->
+
+  <!-- CHART ROW 1 -->
+  <div class="section-title">Volume & Distribution</div>
+  <div class="chart-row chart-row-60-40" style="margin-bottom:20px;">
+
+    <div class="chart-card">
+      <div class="chart-card-title">📈 Transaction Volume &amp; Alert Frequency</div>
+      <div class="chart-card-subtitle">Weekly transaction count vs. alert count — last 52 weeks</div>
+      <div class="chart-wrapper" style="height:280px;">
+        <canvas id="chartVolume"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-card-title">🎯 Alert Severity Distribution</div>
+      <div class="chart-card-subtitle">Breakdown of all 2,000 alerts by severity level</div>
+      <div class="chart-wrapper" style="height:280px;">
+        <canvas id="chartSeverity"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CHART ROW 2 -->
+  <div class="section-title">Rule Performance &amp; Geography</div>
+  <div class="chart-row chart-row-50-50" style="margin-bottom:20px;">
+
+    <div class="chart-card">
+      <div class="chart-card-title">📋 Top 10 Rules by Alert Count</div>
+      <div class="chart-card-subtitle">Most frequently triggered detection rules</div>
+      <div class="chart-wrapper" style="height:320px;">
+        <canvas id="chartRules"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-card-title">🌍 Geographic Risk Distribution</div>
+      <div class="chart-card-subtitle">Alert count by counterparty country — top 10</div>
+      <div class="chart-wrapper" style="height:320px;">
+        <canvas id="chartGeo"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CHART ROW 3 -->
+  <div class="section-title">Pipeline &amp; Effectiveness</div>
+  <div class="chart-row chart-row-50-50" style="margin-bottom:20px;">
+
+    <div class="chart-card">
+      <div class="chart-card-title">🔀 Alert Status Pipeline</div>
+      <div class="chart-card-subtitle">Distribution of alerts across workflow stages</div>
+      <div class="chart-wrapper" id="funnelWrap" style="height:260px;"></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-card-title">🎯 Rule Precision vs. Recall</div>
+      <div class="chart-card-subtitle">Each point represents one detection rule — ideal quadrant: top-right</div>
+      <div class="chart-wrapper" style="height:260px;">
+        <canvas id="chartScatter"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CHART ROW 4: Monthly Trend + Analyst Workload -->
+  <div class="section-title">Monthly Trends &amp; Operations</div>
+  <div class="two-col">
+
+    <div class="chart-card">
+      <div class="chart-card-title">📅 Monthly Transaction Volume</div>
+      <div class="chart-card-subtitle">Transaction count &amp; total value — last 12 months</div>
+      <div class="chart-wrapper" style="height:240px;">
+        <canvas id="chartMonthly"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-card-title">👤 Analyst Workload &amp; Outcomes</div>
+      <div class="chart-card-subtitle">Alert assignments and resolution outcomes by analyst</div>
+      <div class="chart-wrapper" style="height:240px;">
+        <canvas id="chartWorkload"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RULES PERFORMANCE TABLE -->
+  <div class="section-title">Detection Rule Performance</div>
+  <div class="rules-table-card">
+    <div class="table-header">
+      <div class="table-title">⚙️ All Detection Rules — Precision · Recall · F1</div>
+      <div class="table-hint">🖱️ Click headers to sort</div>
+    </div>
+    <div class="table-scroll">
+      <table id="rulesTable">
+        <thead>
+          <tr>
+            <th onclick="sortRules(0)" data-col="0">Rule Name <span class="sort-icon">⇅</span></th>
+            <th onclick="sortRules(1)" data-col="1">Category <span class="sort-icon">⇅</span></th>
+            <th onclick="sortRules(2)" data-col="2">Total Alerts <span class="sort-icon">⇅</span></th>
+            <th onclick="sortRules(3)" data-col="3">True Pos <span class="sort-icon">⇅</span></th>
+            <th onclick="sortRules(4)" data-col="4">False Pos <span class="sort-icon">⇅</span></th>
+            <th onclick="sortRules(5)" data-col="5">Precision <span class="sort-icon">⇅</span></th>
+            <th onclick="sortRules(6)" data-col="6">Recall <span class="sort-icon">⇅</span></th>
+            <th onclick="sortRules(7)" data-col="7">F1 Score <span class="sort-icon">⇅</span></th>
+          </tr>
+        </thead>
+        <tbody id="rulesTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- RECENT ALERTS TABLE -->
+  <div class="section-title">Recent Activity</div>
+  <div class="table-card">
+    <div class="table-header">
+      <div class="table-title">🔔 Recent Alerts — Last 20</div>
+      <div class="table-hint">🖱️ Click column headers to sort</div>
+    </div>
+    <div class="table-scroll">
+      <table id="alertsTable">
+        <thead>
+          <tr>
+            <th onclick="sortTable(0)" data-col="0">Alert ID <span class="sort-icon">⇅</span></th>
+            <th onclick="sortTable(1)" data-col="1">Date <span class="sort-icon">⇅</span></th>
+            <th onclick="sortTable(2)" data-col="2">Customer <span class="sort-icon">⇅</span></th>
+            <th onclick="sortTable(3)" data-col="3" style="text-align:right;">Amount <span class="sort-icon">⇅</span></th>
+            <th onclick="sortTable(4)" data-col="4">Rule Triggered <span class="sort-icon">⇅</span></th>
+            <th onclick="sortTable(5)" data-col="5">Severity <span class="sort-icon">⇅</span></th>
+            <th onclick="sortTable(6)" data-col="6">Status <span class="sort-icon">⇅</span></th>
+            <th onclick="sortTable(7)" data-col="7">Assigned To <span class="sort-icon">⇅</span></th>
+          </tr>
+        </thead>
+        <tbody id="alertsTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<!-- ===== FOOTER ===== -->
+<footer class="footer">
+  <span>TransactGuard AML</span> &nbsp;·&nbsp; Executive Intelligence Dashboard &nbsp;·&nbsp;
+  Generated Mar 12, 2026 &nbsp;·&nbsp; Data: 12-month trailing window &nbsp;·&nbsp; Confidential — Internal Use Only
+</footer>
+
+<!-- ===== EMBEDDED DATA + CHARTS ===== -->
+<script>
+// ---- Embedded Data ----
+const DATA = {
+  weeklyLabels:   ["2025-10", "2025-11", "2025-12", "2025-13", "2025-14", "2025-15", "2025-16", "2025-17", "2025-18", "2025-19", "2025-20", "2025-21", "2025-22", "2025-23", "2025-24", "2025-25", "2025-26", "2025-27", "2025-28", "2025-29", "2025-30", "2025-31", "2025-32", "2025-33", "2025-34", "2025-35", "2025-36", "2025-37", "2025-38", "2025-39", "2025-40", "2025-41", "2025-42", "2025-43", "2025-44", "2025-45", "2025-46", "2025-47", "2025-48", "2025-49", "2025-50", "2025-51", "2025-52", "2026-00", "2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10"],
+  weeklyTxn:      [534, 885, 846, 889, 970, 936, 936, 900, 916, 932, 911, 926, 929, 963, 905, 942, 976, 860, 928, 933, 930, 894, 946, 917, 970, 975, 940, 878, 922, 1009, 891, 896, 957, 960, 892, 921, 925, 881, 900, 855, 917, 976, 410, 538, 887, 1085, 1145, 1075, 1123, 1132, 1105, 1179, 1158, 692],
+  weeklyAlerts:   [26, 41, 30, 40, 43, 27, 47, 39, 44, 40, 36, 40, 38, 41, 26, 39, 37, 47, 46, 37, 41, 35, 34, 30, 36, 42, 42, 36, 43, 38, 32, 41, 42, 37, 38, 36, 31, 48, 39, 41, 40, 36, 11, 21, 38, 29, 38, 33, 38, 46, 36, 46, 26, 30],
+  severityDist:   {"critical": 409, "high": 579, "medium": 699, "low": 313},
+  topRulesLabels: ["Multiple Small Deposits", "Rapid Fund Movement", "Large Cash Transaction", "Structuring Detection", "Round Dollar Amounts", "High-Risk Country Transfer", "Dormant Account Activity", "Business Account Personal Use", "Layering Pattern", "Smurfing Detection"],
+  topRulesCounts: [149, 146, 144, 143, 140, 138, 138, 138, 136, 131],
+  geoLabels:      ["UA", "DE", "KZ", "CH", "IR", "CU", "BR", "SD", "US", "CN"],
+  geoCounts:      [74, 74, 73, 70, 66, 65, 65, 64, 62, 62],
+  geoRisks:       ["medium", "low", "medium", "low", "critical", "high", "medium", "high", "low", "medium"],
+  funnelLabels:   ["New", "Under Review", "Escalated", "True Positive", "False Positive"],
+  funnelCounts:   [830, 484, 296, 202, 188],
+  scatter:        [{"name": "Business Account Personal Use", "abbr": "BAPU", "precision": 0.5281, "recall": 0.604, "alerts": 423}, {"name": "Cross-Border Wire", "abbr": "CW", "precision": 0.8743, "recall": 0.5515, "alerts": 144}, {"name": "Dormant Account Activity", "abbr": "DAA", "precision": 0.4323, "recall": 0.6652, "alerts": 56}, {"name": "High-Risk Country Transfer", "abbr": "HCT", "precision": 0.4312, "recall": 0.6274, "alerts": 77}, {"name": "Large Cash Transaction", "abbr": "LCT", "precision": 0.6837, "recall": 0.4113, "alerts": 331}, {"name": "Layering Pattern", "abbr": "LP", "precision": 0.4154, "recall": 0.4313, "alerts": 727}, {"name": "Multiple Small Deposits", "abbr": "MSD", "precision": 0.7189, "recall": 0.5531, "alerts": 209}, {"name": "New Account High Value", "abbr": "NAHV", "precision": 0.7843, "recall": 0.7284, "alerts": 599}, {"name": "PEP Transaction", "abbr": "PT", "precision": 0.8839, "recall": 0.5703, "alerts": 615}, {"name": "Rapid Fund Movement", "abbr": "RFM", "precision": 0.3522, "recall": 0.5899, "alerts": 80}, {"name": "Round Dollar Amounts", "abbr": "RDA", "precision": 0.4193, "recall": 0.6924, "alerts": 608}, {"name": "Sanctions Country", "abbr": "SC", "precision": 0.7976, "recall": 0.6783, "alerts": 420}, {"name": "Smurfing Detection", "abbr": "SD", "precision": 0.7638, "recall": 0.8433, "alerts": 288}, {"name": "Structuring Detection", "abbr": "SD", "precision": 0.4339, "recall": 0.7314, "alerts": 742}, {"name": "Velocity Check 24h", "abbr": "VC2", "precision": 0.358, "recall": 0.7814, "alerts": 668}],
+  recentAlerts:   [{"alert_id": "ALRT001605", "date": "2026-03-12", "customer": "Charles Santiago", "amount": "$417.00", "rule": "New Account High Value", "severity": "medium", "status": "new", "assigned_to": "Unassigned"}, {"alert_id": "ALRT001855", "date": "2026-03-12", "customer": "Mrs. Tiffany Cole", "amount": "$2,223.96", "rule": "Business Account Personal Use", "severity": "high", "status": "true_positive", "assigned_to": "Frank Wu"}, {"alert_id": "ALRT001334", "date": "2026-03-12", "customer": "Jennifer Monroe", "amount": "$3,020.31", "rule": "New Account High Value", "severity": "high", "status": "escalated", "assigned_to": "Carol Davis"}, {"alert_id": "ALRT001823", "date": "2026-03-12", "customer": "Anthony Rodriguez", "amount": "$9,274.60", "rule": "Dormant Account Activity", "severity": "low", "status": "new", "assigned_to": "Unassigned"}, {"alert_id": "ALRT001989", "date": "2026-03-12", "customer": "Erica Harris", "amount": "$145.66", "rule": "Velocity Check 24h", "severity": "high", "status": "under_review", "assigned_to": "Carol Davis"}, {"alert_id": "ALRT000988", "date": "2026-03-12", "customer": "Anthony Bell", "amount": "$4,243.06", "rule": "Layering Pattern", "severity": "medium", "status": "false_positive", "assigned_to": "Henry Osei"}, {"alert_id": "ALRT000753", "date": "2026-03-12", "customer": "Jon Martin", "amount": "$2,452.83", "rule": "High-Risk Country Transfer", "severity": "medium", "status": "under_review", "assigned_to": "Alice Morgan"}, {"alert_id": "ALRT000635", "date": "2026-03-12", "customer": "Nicole Parsons", "amount": "$12,514.68", "rule": "Velocity Check 24h", "severity": "critical", "status": "true_positive", "assigned_to": "Frank Wu"}, {"alert_id": "ALRT000527", "date": "2026-03-12", "customer": "Sandy Stephenson", "amount": "$26,791.80", "rule": "Velocity Check 24h", "severity": "medium", "status": "under_review", "assigned_to": "Bob Chen"}, {"alert_id": "ALRT000265", "date": "2026-03-12", "customer": "John Shields", "amount": "$411,660.33", "rule": "PEP Transaction", "severity": "critical", "status": "true_positive", "assigned_to": "David Kim"}, {"alert_id": "ALRT001372", "date": "2026-03-12", "customer": "Marissa Webster", "amount": "$1,909.97", "rule": "Dormant Account Activity", "severity": "medium", "status": "escalated", "assigned_to": "Alice Morgan"}, {"alert_id": "ALRT000556", "date": "2026-03-12", "customer": "Mitchell Sellers", "amount": "$3,133.68", "rule": "Structuring Detection", "severity": "critical", "status": "escalated", "assigned_to": "Bob Chen"}, {"alert_id": "ALRT000451", "date": "2026-03-11", "customer": "Manuel Brock", "amount": "$2,805.63", "rule": "Cross-Border Wire", "severity": "critical", "status": "new", "assigned_to": "Unassigned"}, {"alert_id": "ALRT001753", "date": "2026-03-11", "customer": "John Shields", "amount": "$4,969.65", "rule": "Large Cash Transaction", "severity": "low", "status": "new", "assigned_to": "Unassigned"}, {"alert_id": "ALRT001523", "date": "2026-03-11", "customer": "James Griffin", "amount": "$4,371.89", "rule": "New Account High Value", "severity": "high", "status": "new", "assigned_to": "Unassigned"}, {"alert_id": "ALRT001342", "date": "2026-03-11", "customer": "Brian Murphy", "amount": "$4,179.23", "rule": "Sanctions Country", "severity": "high", "status": "under_review", "assigned_to": "Henry Osei"}, {"alert_id": "ALRT000513", "date": "2026-03-11", "customer": "Kayla Garcia", "amount": "$808.75", "rule": "Layering Pattern", "severity": "low", "status": "false_positive", "assigned_to": "David Kim"}, {"alert_id": "ALRT001118", "date": "2026-03-11", "customer": "Amber Wilson", "amount": "$49,004.23", "rule": "Round Dollar Amounts", "severity": "medium", "status": "new", "assigned_to": "Unassigned"}, {"alert_id": "ALRT001618", "date": "2026-03-10", "customer": "Donald Donaldson", "amount": "$1,763.22", "rule": "Dormant Account Activity", "severity": "medium", "status": "true_positive", "assigned_to": "Frank Wu"}, {"alert_id": "ALRT001367", "date": "2026-03-10", "customer": "Penny Bowman", "amount": "$3,911.51", "rule": "Layering Pattern", "severity": "medium", "status": "new", "assigned_to": "Unassigned"}],
+  sparklineTxn:   [506, 976, 410, 538, 887, 1085, 1145, 1075, 1123, 1132, 1105, 1179, 1158, 692],
+  activeSeverity: {"critical": 330, "high": 448, "low": 265, "medium": 567},
+  rulesTable:     [{"rule_id": 2, "rule_name": "Structuring Detection", "category": "structuring", "precision": 0.434, "recall": 0.731, "total_alerts": 742, "true_pos": 321, "false_pos": 421, "threshold": 9500.0, "f1": 0.545}, {"rule_id": 13, "rule_name": "Layering Pattern", "category": "network", "precision": 0.415, "recall": 0.431, "total_alerts": 727, "true_pos": 301, "false_pos": 426, "threshold": 0.0, "f1": 0.423}, {"rule_id": 9, "rule_name": "Velocity Check 24h", "category": "velocity", "precision": 0.358, "recall": 0.781, "total_alerts": 668, "true_pos": 239, "false_pos": 429, "threshold": 10.0, "f1": 0.491}, {"rule_id": 11, "rule_name": "PEP Transaction", "category": "network", "precision": 0.884, "recall": 0.57, "total_alerts": 615, "true_pos": 543, "false_pos": 72, "threshold": 0.0, "f1": 0.693}, {"rule_id": 5, "rule_name": "Round Dollar Amounts", "category": "behavior", "precision": 0.419, "recall": 0.692, "total_alerts": 608, "true_pos": 254, "false_pos": 354, "threshold": 0.0, "f1": 0.522}, {"rule_id": 10, "rule_name": "New Account High Value", "category": "behavior", "precision": 0.784, "recall": 0.728, "total_alerts": 599, "true_pos": 469, "false_pos": 130, "threshold": 50000.0, "f1": 0.755}, {"rule_id": 15, "rule_name": "Business Account Personal Use", "category": "behavior", "precision": 0.528, "recall": 0.604, "total_alerts": 423, "true_pos": 223, "false_pos": 200, "threshold": 0.0, "f1": 0.564}, {"rule_id": 12, "rule_name": "Sanctions Country", "category": "geographic", "precision": 0.798, "recall": 0.678, "total_alerts": 420, "true_pos": 334, "false_pos": 86, "threshold": 0.0, "f1": 0.733}, {"rule_id": 1, "rule_name": "Large Cash Transaction", "category": "structuring", "precision": 0.684, "recall": 0.411, "total_alerts": 331, "true_pos": 226, "false_pos": 105, "threshold": 10000.0, "f1": 0.514}, {"rule_id": 14, "rule_name": "Smurfing Detection", "category": "structuring", "precision": 0.764, "recall": 0.843, "total_alerts": 288, "true_pos": 219, "false_pos": 69, "threshold": 3000.0, "f1": 0.802}, {"rule_id": 7, "rule_name": "Multiple Small Deposits", "category": "structuring", "precision": 0.719, "recall": 0.553, "total_alerts": 209, "true_pos": 150, "false_pos": 59, "threshold": 3000.0, "f1": 0.625}, {"rule_id": 8, "rule_name": "Cross-Border Wire", "category": "geographic", "precision": 0.874, "recall": 0.551, "total_alerts": 144, "true_pos": 125, "false_pos": 19, "threshold": 5000.0, "f1": 0.676}, {"rule_id": 3, "rule_name": "Rapid Fund Movement", "category": "velocity", "precision": 0.352, "recall": 0.59, "total_alerts": 80, "true_pos": 28, "false_pos": 52, "threshold": 0.0, "f1": 0.441}, {"rule_id": 4, "rule_name": "High-Risk Country Transfer", "category": "geographic", "precision": 0.431, "recall": 0.627, "total_alerts": 77, "true_pos": 33, "false_pos": 44, "threshold": 0.0, "f1": 0.511}, {"rule_id": 6, "rule_name": "Dormant Account Activity", "category": "behavior", "precision": 0.432, "recall": 0.665, "total_alerts": 56, "true_pos": 24, "false_pos": 32, "threshold": 180.0, "f1": 0.524}],
+  monthlyLabels:  ["2025-03", "2025-04", "2025-05", "2025-06", "2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12", "2026-01", "2026-02", "2026-03"],
+  monthlyCounts:  [2496, 3972, 4077, 3999, 4089, 4143, 4006, 4164, 3877, 4058, 4560, 4525, 2034],
+  monthlyAmounts: [232449050.67, 368395242.97, 347069252.99, 329325737.98, 307255565.2, 345445647.95, 311217062.29, 326867425.6, 301804514.21, 369183046.69, 432823876.15, 358664392.49, 131516185.57],
+  workload:       [{"analyst": "Unassigned", "total": 830, "tp": 0, "fp": 0}, {"analyst": "Frank Wu", "total": 164, "tp": 35, "fp": 26}, {"analyst": "Eva Patel", "total": 161, "tp": 25, "fp": 20}, {"analyst": "Carol Davis", "total": 158, "tp": 27, "fp": 22}, {"analyst": "Grace Lopez", "total": 152, "tp": 29, "fp": 24}, {"analyst": "Bob Chen", "total": 143, "tp": 21, "fp": 27}, {"analyst": "Alice Morgan", "total": 138, "tp": 22, "fp": 23}, {"analyst": "David Kim", "total": 131, "tp": 19, "fp": 20}],
+  customerRisk:   {"critical": 57, "high": 143, "low": 134, "medium": 166},
+};
+
+// ---- Shared Chart.js defaults ----
+Chart.defaults.color = '#8b949e';
+Chart.defaults.font.family = "'Inter', sans-serif";
+Chart.defaults.font.size = 12;
+
+const gridColor = 'rgba(48,54,61,0.7)';
+const tickColor = '#6e7681';
+
+// ========================
+// KPI: Sparkline (total txn)
+// ========================
+(function () {
+  const ctx = document.getElementById('sparkTxn').getContext('2d');
+  const labels = DATA.sparklineTxn.map((_, i) => `W${i+1}`);
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data: DATA.sparklineTxn,
+        borderColor: '#58a6ff',
+        borderWidth: 2,
+        pointRadius: 0,
+        fill: true,
+        backgroundColor: 'rgba(88,166,255,0.12)',
+        tension: 0.4,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 1200, easing: 'easeInOutQuart' },
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      scales: { x: { display: false }, y: { display: false } },
+    }
+  });
+})();
+
+// ========================
+// KPI: Severity bar + legend
+// ========================
+(function () {
+  const sev = DATA.activeSeverity;
+  const total = (sev.critical||0)+(sev.high||0)+(sev.medium||0)+(sev.low||0);
+  const bar = document.getElementById('sevBar');
+  const legend = document.getElementById('sevLegend');
+
+  const items = [
+    { key:'critical', color:'#f85149', label:'Critical' },
+    { key:'high',     color:'#f0883e', label:'High' },
+    { key:'medium',   color:'#d29922', label:'Medium' },
+    { key:'low',      color:'#3fb950', label:'Low' },
+  ];
+
+  items.forEach(item => {
+    const cnt = sev[item.key] || 0;
+    const pct = total > 0 ? (cnt / total * 100).toFixed(1) : 0;
+    if (cnt > 0) {
+      const seg = document.createElement('div');
+      seg.className = 'sev-seg';
+      seg.style.width = pct + '%';
+      seg.style.background = item.color;
+      seg.title = `${item.label}: ${cnt}`;
+      bar.appendChild(seg);
+    }
+    const li = document.createElement('div');
+    li.className = 'sev-legend-item';
+    li.innerHTML = `<div class="sev-dot" style="background:${item.color}"></div>${item.label}: <strong style="color:#e6edf3">${cnt}</strong>`;
+    legend.appendChild(li);
+  });
+})();
+
+// ========================
+// Chart 1: Volume Line (dual-axis)
+// ========================
+(function () {
+  const ctx = document.getElementById('chartVolume').getContext('2d');
+
+  // Shorten labels: show every 4th week label
+  const labels = DATA.weeklyLabels.map((w, i) => {
+    if (i % 4 === 0) {
+      const [yr, wk] = w.split('-');
+      return `W${parseInt(wk)} '${yr.slice(2)}`;
+    }
+    return '';
+  });
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Transactions',
+          data: DATA.weeklyTxn,
+          borderColor: '#58a6ff',
+          backgroundColor: 'rgba(88,166,255,0.08)',
+          borderWidth: 2.5,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          fill: true,
+          tension: 0.4,
+          yAxisID: 'yTxn',
+        },
+        {
+          label: 'Alerts',
+          data: DATA.weeklyAlerts,
+          borderColor: '#f78166',
+          backgroundColor: 'rgba(247,129,102,0.06)',
+          borderWidth: 2,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          fill: true,
+          tension: 0.4,
+          yAxisID: 'yAlerts',
+          borderDash: [4, 3],
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 1400, easing: 'easeInOutQuart' },
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          position: 'top',
+          align: 'end',
+          labels: { usePointStyle: true, pointStyleWidth: 16, padding: 20, color: '#8b949e' }
+        },
+        tooltip: {
+          backgroundColor: '#1c2128',
+          borderColor: '#30363d',
+          borderWidth: 1,
+          titleColor: '#e6edf3',
+          bodyColor: '#8b949e',
+          padding: 12,
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: gridColor, drawBorder: false },
+          ticks: { color: tickColor, maxRotation: 0 },
+          border: { display: false },
+        },
+        yTxn: {
+          position: 'left',
+          grid: { color: gridColor, drawBorder: false },
+          ticks: { color: '#58a6ff', callback: v => v >= 1000 ? (v/1000).toFixed(1)+'k' : v },
+          border: { display: false },
+          title: { display: true, text: 'Transactions', color: '#58a6ff', font: { size: 11 } },
+        },
+        yAlerts: {
+          position: 'right',
+          grid: { drawOnChartArea: false },
+          ticks: { color: '#f78166' },
+          border: { display: false },
+          title: { display: true, text: 'Alerts', color: '#f78166', font: { size: 11 } },
+        },
+      }
+    }
+  });
+})();
+
+// ========================
+// Chart 2: Severity Donut
+// ========================
+(function () {
+  const ctx = document.getElementById('chartSeverity').getContext('2d');
+  const s = DATA.severityDist;
+  const total = s.critical + s.high + s.medium + s.low;
+
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Critical', 'High', 'Medium', 'Low'],
+      datasets: [{
+        data: [s.critical, s.high, s.medium, s.low],
+        backgroundColor: ['#f85149', '#f0883e', '#d29922', '#3fb950'],
+        borderColor: '#161b22',
+        borderWidth: 3,
+        hoverBorderWidth: 0,
+        hoverOffset: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '68%',
+      animation: { duration: 1200, easing: 'easeInOutQuart' },
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: {
+            usePointStyle: true,
+            pointStyleWidth: 10,
+            padding: 18,
+            color: '#8b949e',
+            generateLabels(chart) {
+              const d = chart.data;
+              return d.labels.map((label, i) => {
+                const val = d.datasets[0].data[i];
+                const pct = ((val/total)*100).toFixed(1);
+                return {
+                  text: `${label}  ${val.toLocaleString()}  (${pct}%)`,
+                  fillStyle: d.datasets[0].backgroundColor[i],
+                  strokeStyle: d.datasets[0].backgroundColor[i],
+                  pointStyle: 'circle',
+                  index: i,
+                };
+              });
+            }
+          }
+        },
+        tooltip: {
+          backgroundColor: '#1c2128',
+          borderColor: '#30363d',
+          borderWidth: 1,
+          titleColor: '#e6edf3',
+          bodyColor: '#8b949e',
+          callbacks: {
+            label: ctx => ` ${ctx.label}: ${ctx.parsed.toLocaleString()} (${((ctx.parsed/total)*100).toFixed(1)}%)`
+          }
+        }
+      }
+    }
+  });
+})();
+
+// ========================
+// Chart 3: Top Rules Bar
+// ========================
+(function () {
+  const ctx = document.getElementById('chartRules').getContext('2d');
+  const labels = DATA.topRulesLabels;
+  const counts = DATA.topRulesCounts;
+
+  // Generate blue gradient shades
+  const colors = counts.map((_, i) => `rgba(88,166,255,${1 - i * 0.06})`);
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Alert Count',
+        data: counts,
+        backgroundColor: colors,
+        borderColor: 'rgba(88,166,255,0.6)',
+        borderWidth: 1,
+        borderRadius: 4,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 1200, easing: 'easeInOutQuart' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1c2128',
+          borderColor: '#30363d',
+          borderWidth: 1,
+          titleColor: '#e6edf3',
+          bodyColor: '#8b949e',
+          callbacks: { label: ctx => ` Alerts: ${ctx.parsed.x.toLocaleString()}` }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: gridColor, drawBorder: false },
+          ticks: { color: tickColor },
+          border: { display: false },
+        },
+        y: {
+          grid: { display: false },
+          ticks: { color: '#e6edf3', font: { size: 11 } },
+          border: { display: false },
+        }
+      }
+    }
+  });
+})();
+
+// ========================
+// Chart 4: Geographic Bar
+// ========================
+(function () {
+  const ctx = document.getElementById('chartGeo').getContext('2d');
+
+  const riskColorMap = {
+    'low':      'rgba(63,185,80,0.75)',
+    'medium':   'rgba(210,153,34,0.75)',
+    'high':     'rgba(240,136,62,0.75)',
+    'critical': 'rgba(248,81,73,0.75)',
+    'unknown':  'rgba(110,118,129,0.75)',
+  };
+
+  const colors = DATA.geoRisks.map(r => riskColorMap[r] || riskColorMap.unknown);
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: DATA.geoLabels,
+      datasets: [{
+        label: 'Alert Count',
+        data: DATA.geoCounts,
+        backgroundColor: colors,
+        borderColor: colors.map(c => c.replace('0.75', '1')),
+        borderWidth: 1,
+        borderRadius: 4,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 1200, easing: 'easeInOutQuart' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1c2128',
+          borderColor: '#30363d',
+          borderWidth: 1,
+          titleColor: '#e6edf3',
+          bodyColor: '#8b949e',
+          callbacks: {
+            label: (ctx) => {
+              const risk = DATA.geoRisks[ctx.dataIndex];
+              return ` Alerts: ${ctx.parsed.x} | Risk: ${risk}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: gridColor, drawBorder: false },
+          ticks: { color: tickColor },
+          border: { display: false },
+        },
+        y: {
+          grid: { display: false },
+          ticks: { color: '#e6edf3', font: { size: 12 } },
+          border: { display: false },
+        }
+      }
+    }
+  });
+})();
+
+// ========================
+// Chart 5: Alert Funnel (custom HTML bars)
+// ========================
+(function () {
+  const wrap = document.getElementById('funnelWrap');
+  const maxVal = Math.max(...DATA.funnelCounts);
+  const total = DATA.funnelCounts.reduce((a, b) => a + b, 0);
+
+  const colors = ['#58a6ff', '#d29922', '#f85149', '#3fb950', '#8b949e'];
+
+  const container = document.createElement('div');
+  container.className = 'funnel-container';
+  container.style.paddingTop = '12px';
+
+  DATA.funnelLabels.forEach((label, i) => {
+    const val = DATA.funnelCounts[i];
+    const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
+    const barW = maxVal > 0 ? ((val / maxVal) * 100) : 0;
+
+    const item = document.createElement('div');
+    item.className = 'funnel-item';
+    item.innerHTML = `
+      <div class="funnel-label">${label}</div>
+      <div class="funnel-bar-wrap">
+        <div class="funnel-bar" style="width:${barW}%;background:${colors[i]};transition-delay:${i*80}ms">
+          ${val.toLocaleString()}
+        </div>
+      </div>
+      <div class="funnel-pct">${pct}%</div>
+    `;
+    container.appendChild(item);
+  });
+
+  wrap.appendChild(container);
+})();
+
+// ========================
+// Chart 6: Scatter — Precision vs Recall
+// ========================
+(function () {
+  const ctx = document.getElementById('chartScatter').getContext('2d');
+
+  const points = DATA.scatter.map(r => ({ x: r.precision, y: r.recall, name: r.name, abbr: r.abbr, alerts: r.alerts }));
+
+  new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: [{
+        label: 'Rules',
+        data: points,
+        backgroundColor: 'rgba(88,166,255,0.7)',
+        borderColor: '#58a6ff',
+        borderWidth: 1.5,
+        pointRadius: 8,
+        pointHoverRadius: 11,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 1200, easing: 'easeInOutQuart' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1c2128',
+          borderColor: '#30363d',
+          borderWidth: 1,
+          titleColor: '#e6edf3',
+          bodyColor: '#8b949e',
+          callbacks: {
+            title: (items) => items[0].raw.name,
+            label: (item) => [
+              ` Precision: ${item.raw.x.toFixed(3)}`,
+              ` Recall: ${item.raw.y.toFixed(3)}`,
+              ` Alerts: ${item.raw.alerts.toLocaleString()}`,
+            ]
+          }
+        },
+        afterDraw: undefined,
+      },
+      scales: {
+        x: {
+          min: 0, max: 1,
+          title: { display: true, text: 'Precision', color: '#8b949e', font: { size: 11 } },
+          grid: { color: gridColor, drawBorder: false },
+          ticks: { color: tickColor },
+          border: { display: false },
+        },
+        y: {
+          min: 0, max: 1,
+          title: { display: true, text: 'Recall', color: '#8b949e', font: { size: 11 } },
+          grid: { color: gridColor, drawBorder: false },
+          ticks: { color: tickColor },
+          border: { display: false },
+        }
+      }
+    },
+    plugins: [{
+      id: 'quadrantLines',
+      afterDraw(chart) {
+        const { ctx, chartArea, scales } = chart;
+        const xMid = scales.x.getPixelForValue(0.5);
+        const yMid = scales.y.getPixelForValue(0.5);
+
+        ctx.save();
+        ctx.strokeStyle = 'rgba(110,118,129,0.35)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+
+        ctx.beginPath();
+        ctx.moveTo(xMid, chartArea.top);
+        ctx.lineTo(xMid, chartArea.bottom);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(chartArea.left, yMid);
+        ctx.lineTo(chartArea.right, yMid);
+        ctx.stroke();
+
+        ctx.restore();
+
+        // Quadrant labels
+        ctx.save();
+        ctx.font = "10px 'Inter', sans-serif";
+        ctx.fillStyle = 'rgba(110,118,129,0.5)';
+        ctx.fillText('Low Prec / High Rec', chartArea.left + 6, chartArea.top + 14);
+        ctx.fillText('High Prec / High Rec', xMid + 6, chartArea.top + 14);
+        ctx.fillText('Low Prec / Low Rec', chartArea.left + 6, chartArea.bottom - 6);
+        ctx.fillText('High Prec / Low Rec', xMid + 6, chartArea.bottom - 6);
+        ctx.restore();
+
+        // Draw abbreviation labels on points
+        chart.data.datasets[0].data.forEach((pt, i) => {
+          const x = scales.x.getPixelForValue(pt.x);
+          const y = scales.y.getPixelForValue(pt.y);
+          ctx.save();
+          ctx.font = "bold 9px 'Inter', sans-serif";
+          ctx.fillStyle = '#e6edf3';
+          ctx.textAlign = 'center';
+          ctx.fillText(pt.abbr, x, y + 18);
+          ctx.restore();
+        });
+      }
+    }]
+  });
+})();
+
+// ========================
+// Chart 7: Monthly Volume (bar + line)
+// ========================
+(function () {
+  const ctx = document.getElementById('chartMonthly').getContext('2d');
+  const labels = DATA.monthlyLabels.map(m => {
+    const [yr, mo] = m.split('-');
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return months[parseInt(mo)-1] + ' '' + yr.slice(2);
+  });
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          type: 'bar',
+          label: 'Transaction Count',
+          data: DATA.monthlyCounts,
+          backgroundColor: 'rgba(88,166,255,0.25)',
+          borderColor: 'rgba(88,166,255,0.7)',
+          borderWidth: 1,
+          borderRadius: 3,
+          yAxisID: 'yCnt',
+          order: 2,
+        },
+        {
+          type: 'line',
+          label: 'Total Value ($)',
+          data: DATA.monthlyAmounts,
+          borderColor: '#3fb950',
+          backgroundColor: 'rgba(63,185,80,0.06)',
+          borderWidth: 2.5,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          fill: true,
+          tension: 0.3,
+          yAxisID: 'yVal',
+          order: 1,
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 1200, easing: 'easeInOutQuart' },
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          position: 'top',
+          align: 'end',
+          labels: { usePointStyle: true, pointStyleWidth: 12, padding: 16, color: '#8b949e', font: { size: 11 } }
+        },
+        tooltip: {
+          backgroundColor: '#1c2128', borderColor: '#30363d', borderWidth: 1,
+          titleColor: '#e6edf3', bodyColor: '#8b949e', padding: 10,
+          callbacks: {
+            label: (ctx) => {
+              if (ctx.datasetIndex === 0) return ` Count: ${ctx.parsed.y.toLocaleString()}`;
+              return ` Value: $${(ctx.parsed.y/1000000).toFixed(2)}M`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: gridColor, drawBorder: false },
+          ticks: { color: tickColor, font: { size: 11 } },
+          border: { display: false },
+        },
+        yCnt: {
+          position: 'left', grid: { color: gridColor, drawBorder: false },
+          ticks: { color: '#58a6ff', font: { size: 10 }, callback: v => v >= 1000 ? (v/1000).toFixed(1)+'k' : v },
+          border: { display: false },
+        },
+        yVal: {
+          position: 'right', grid: { drawOnChartArea: false },
+          ticks: { color: '#3fb950', font: { size: 10 }, callback: v => '$'+(v/1000000).toFixed(1)+'M' },
+          border: { display: false },
+        },
+      }
+    }
+  });
+})();
+
+// ========================
+// Chart 8: Analyst Workload (stacked bar)
+// ========================
+(function () {
+  const ctx = document.getElementById('chartWorkload').getContext('2d');
+  const analysts = DATA.workload.map(w => w.analyst === 'Unassigned' ? '⚠ Unassigned' : w.analyst);
+  const totals  = DATA.workload.map(w => w.total - w.tp - w.fp);  // active (not yet closed)
+  const tps     = DATA.workload.map(w => w.tp);
+  const fps     = DATA.workload.map(w => w.fp);
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: analysts,
+      datasets: [
+        {
+          label: 'Active',
+          data: totals,
+          backgroundColor: 'rgba(88,166,255,0.6)',
+          borderRadius: 3,
+          stack: 'workload',
+        },
+        {
+          label: 'True Positive',
+          data: tps,
+          backgroundColor: 'rgba(63,185,80,0.7)',
+          borderRadius: 3,
+          stack: 'workload',
+        },
+        {
+          label: 'False Positive',
+          data: fps,
+          backgroundColor: 'rgba(110,118,129,0.5)',
+          borderRadius: 3,
+          stack: 'workload',
+        },
+      ]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 1200, easing: 'easeInOutQuart' },
+      plugins: {
+        legend: {
+          position: 'top', align: 'end',
+          labels: { usePointStyle: true, pointStyleWidth: 10, padding: 14, color: '#8b949e', font: { size: 11 } }
+        },
+        tooltip: {
+          backgroundColor: '#1c2128', borderColor: '#30363d', borderWidth: 1,
+          titleColor: '#e6edf3', bodyColor: '#8b949e', padding: 10,
+        },
+      },
+      scales: {
+        x: {
+          stacked: true,
+          grid: { color: gridColor, drawBorder: false },
+          ticks: { color: tickColor },
+          border: { display: false },
+        },
+        y: {
+          stacked: true,
+          grid: { display: false },
+          ticks: { color: '#e6edf3', font: { size: 11 } },
+          border: { display: false },
+        },
+      }
+    }
+  });
+})();
+
+// ========================
+// Rules Performance Table
+// ========================
+(function () {
+  const tbody = document.getElementById('rulesTableBody');
+  let currentRules = [...DATA.rulesTable];
+  let sortCol = -1;
+  let sortAsc = true;
+
+  function catBadge(cat) {
+    return `<span class="cat-badge cat-${cat}">${cat}</span>`;
+  }
+
+  function precBar(val) {
+    const pct = Math.round(val * 100);
+    const color = val >= 0.7 ? '#3fb950' : val >= 0.5 ? '#d29922' : '#f78166';
+    return `
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="perf-bar-wrap"><div class="perf-bar" style="width:${pct}%;background:${color}"></div></div>
+        <span style="color:${color};font-weight:600;font-size:11px;">${val.toFixed(3)}</span>
+      </div>`;
+  }
+
+  function f1Class(val) {
+    if (val >= 0.65) return 'f1-good';
+    if (val >= 0.45) return 'f1-ok';
+    return 'f1-poor';
+  }
+
+  function renderRuleRows(rules) {
+    tbody.innerHTML = '';
+    rules.forEach(r => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="font-weight:500">${r.rule_name}</td>
+        <td>${catBadge(r.category)}</td>
+        <td style="text-align:right;font-family:monospace;font-weight:600">${r.total_alerts.toLocaleString()}</td>
+        <td style="text-align:right;color:#3fb950;font-weight:600">${r.true_pos.toLocaleString()}</td>
+        <td style="text-align:right;color:#8b949e">${r.false_pos.toLocaleString()}</td>
+        <td>${precBar(r.precision)}</td>
+        <td>${precBar(r.recall)}</td>
+        <td style="text-align:center"><span class="${f1Class(r.f1)}">${r.f1.toFixed(3)}</span></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  renderRuleRows(currentRules);
+
+  window.sortRules = function(colIdx) {
+    const th = document.querySelectorAll('#rulesTable thead th');
+    th.forEach(t => t.classList.remove('sorted'));
+    th[colIdx].classList.add('sorted');
+
+    if (sortCol === colIdx) { sortAsc = !sortAsc; }
+    else { sortCol = colIdx; sortAsc = true; }
+
+    const keys = ['rule_name','category','total_alerts','true_pos','false_pos','precision','recall','f1'];
+    const key = keys[colIdx];
+    currentRules.sort((a, b) => {
+      let va = a[key]; let vb = b[key];
+      if (typeof va === 'string') { va = va.toLowerCase(); vb = vb.toLowerCase(); }
+      if (va < vb) return sortAsc ? -1 : 1;
+      if (va > vb) return sortAsc ? 1 : -1;
+      return 0;
+    });
+
+    th[colIdx].querySelector('.sort-icon').textContent = sortAsc ? '↑' : '↓';
+    renderRuleRows(currentRules);
+  };
+})();
+
+// ========================
+// Recent Alerts Table
+// ========================
+(function () {
+  const tbody = document.getElementById('alertsTableBody');
+
+  function severityBadge(sev) {
+    return `<span class="badge badge-${sev}">${sev.charAt(0).toUpperCase() + sev.slice(1)}</span>`;
+  }
+
+  function statusBadge(st) {
+    const labels = { new: 'New', under_review: 'Under Review', escalated: 'Escalated',
+                      true_positive: 'True Positive', false_positive: 'False Positive' };
+    return `<span class="badge badge-${st}">${labels[st] || st}</span>`;
+  }
+
+  function renderRows(alerts) {
+    tbody.innerHTML = '';
+    alerts.forEach(a => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="td-id">${a.alert_id}</td>
+        <td class="td-date">${a.date}</td>
+        <td class="td-customer">${a.customer}</td>
+        <td class="td-amount" style="text-align:right">${a.amount}</td>
+        <td class="td-rule" title="${a.rule}">${a.rule}</td>
+        <td>${severityBadge(a.severity)}</td>
+        <td>${statusBadge(a.status)}</td>
+        <td class="td-assigned">${a.assigned_to}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  let currentData = [...DATA.recentAlerts];
+  let sortCol = -1;
+  let sortAsc = true;
+
+  renderRows(currentData);
+
+  // Expose sort globally
+  window.sortTable = function(colIdx) {
+    const th = document.querySelectorAll('#alertsTable thead th');
+    th.forEach(t => t.classList.remove('sorted'));
+    th[colIdx].classList.add('sorted');
+
+    if (sortCol === colIdx) { sortAsc = !sortAsc; }
+    else { sortCol = colIdx; sortAsc = true; }
+
+    const keys = ['alert_id','date','customer','amount','rule','severity','status','assigned_to'];
+    const key = keys[colIdx];
+
+    currentData.sort((a, b) => {
+      let va = a[key] || '';
+      let vb = b[key] || '';
+      // Numeric sort for amount
+      if (key === 'amount') {
+        va = parseFloat(va.replace(/[$,]/g,'')) || 0;
+        vb = parseFloat(vb.replace(/[$,]/g,'')) || 0;
+      }
+      if (va < vb) return sortAsc ? -1 : 1;
+      if (va > vb) return sortAsc ? 1 : -1;
+      return 0;
+    });
+
+    const icon = sortAsc ? '↑' : '↓';
+    th[colIdx].querySelector('.sort-icon').textContent = icon;
+
+    renderRows(currentData);
+  };
+})();
+</script>
+</body>
+</html>

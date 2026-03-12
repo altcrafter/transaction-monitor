@@ -1,0 +1,254 @@
+TRANSACTION MONITORING PLATFORM — ANALYSIS REPORT
+Generated: 2024-12-31 (end of monitoring period)
+Database: 198,891 transactions | 2,000 customers | 4,290 accounts
+Platform: Python 3.10+, SQLite, Flask
+
+═══════════════════════════════════════════════════════════════════════════════
+EXECUTIVE SUMMARY
+═══════════════════════════════════════════════════════════════════════════════
+
+The platform processed 198,891 transactions totaling $17.63 billion USD across
+a 12-month period (January–December 2024). The rule engine identified 48,394
+alerts across 39,285 unique transactions (19.7% of all transactions), flagging
+1,881 unique customers for investigation.
+
+Key risk metrics:
+  - 4,510 high-priority alerts (score >= 60)
+  - 9 confirmed sanctions violations (GEO-001: sanctioned country transactions)
+  - 90 customers with embedded fraud patterns detected
+  - All 8 fraud typologies successfully detected by at least one rule
+
+═══════════════════════════════════════════════════════════════════════════════
+1. VOLUME AND SEASONALITY ANALYSIS (Q1, Q14)
+═══════════════════════════════════════════════════════════════════════════════
+
+Transaction volume shows strong seasonal patterns consistent with real financial
+data:
+
+Monthly volume trend (2024):
+  Jan: 13,398 txns   $1.29B  (baseline)
+  Feb: 12,634 txns   $1.07B  (-5.7% MoM — typical Feb dip)
+  Mar: 14,036 txns   $1.30B  (+11.1% MoM — Q1 end recovery)
+  ...
+  Nov: 19,953 txns   $1.85B
+  Dec: 26,280 txns   $2.27B  (+31.7% MoM — holiday surge)
+
+December volume was 1.96x January, consistent with year-end financial activity,
+holiday spending, and annual settlements.
+
+Weekday patterns: Monday–Friday account for ~71% of transactions. Saturdays
+show elevated cash activity (branch visits), while Sundays are lowest. Peak
+hours are 9am–6pm with mobile channel dominating overall (27.8%).
+
+Channel distribution:
+  Mobile:  55,332 txns (27.8%)
+  Online:  41,864 txns (21.0%)
+  Branch:  38,759 txns (19.5%)
+  Wire:    29,816 txns (15.0%)
+  ATM:     25,842 txns (13.0%)
+  API:      7,278 txns  (3.7%)
+
+═══════════════════════════════════════════════════════════════════════════════
+2. CUSTOMER RISK SEGMENTATION (Q2, Q16, Q22)
+═══════════════════════════════════════════════════════════════════════════════
+
+Customer population:
+  Low risk (rating 1):    1,061 customers (53.1%) — 106,040 transactions
+  Medium risk (rating 2):   663 customers (33.2%) — 64,546 transactions
+  High risk (rating 3):     276 customers (13.8%) — 28,305 transactions
+
+Alert rates by segment:
+  Low risk:    ~17% alert rate
+  Medium risk: ~25% alert rate
+  High risk:   ~29% alert rate
+
+Financial institutions, despite being few in number, generate disproportionate
+transaction volumes due to large average transaction sizes (avg $50k+ USD).
+Business accounts show ~3x the transaction frequency of individual accounts.
+
+PEP (Politically Exposed Person) customers: ~2% of base but generate outsized
+alert volumes through BEH-004 rule (707 alerts at avg score 60.2).
+
+Top risk indicator: customers who trigger rules across 3+ categories
+simultaneously (multi-category flag in Q22) are the highest-confidence
+investigation targets.
+
+═══════════════════════════════════════════════════════════════════════════════
+3. FRAUD PATTERN DETECTION RESULTS (Q5, Q8, Q9, Q10, Q11)
+═══════════════════════════════════════════════════════════════════════════════
+
+All 8 embedded fraud patterns were successfully detected:
+
+Pattern 1 — Structuring/Smurfing:
+  STR-001 detected 218 alerts, ALL on known fraud accounts (100% precision).
+  Q5 identified accounts with 3+ sub-threshold deposits in a single month,
+  with totals ranging from $27,000–$250,000 (clearly above the CTR threshold
+  when aggregated). Avg deposit in fraud cluster: $9,456.
+
+Pattern 2 — Rapid Velocity:
+  VEL-001 detected 192 alerts with 100% precision. Maximum observed velocity:
+  49 transactions in a 1-hour window (vs. normal max of ~5).
+  Q11 shows fraud accounts have avg_vel_1h = 8.2 vs 0.07 for normal accounts
+  — a 117x multiplier, making this the highest-signal rule.
+
+Pattern 3 — Round-Trip Transfers:
+  Q9 (self-join analysis) identified 58 wire-out/wire-in pairs to the same
+  counterparty within 48 hours. Amounts closely match (avg difference < 3%),
+  consistent with fee deductions in layering schemes.
+
+Pattern 4 — Geographic Risk:
+  GEO-001 (sanctioned countries) fired 9 times with 100% precision and highest
+  average score (61.4). Counterparties in Iran, North Korea, Russia, and Cuba
+  detected. GEO-002 (very high risk) added 24 more alerts.
+
+Pattern 5 — Layering:
+  The A->B->C->D chain pattern was captured by a combination of VEL rules,
+  GEO-003, and BEH-003 (round-amount large wires). Wire transfers showed
+  systematic 2-5% deductions per hop — classic layering signature.
+
+Pattern 6 — Dormant Activation:
+  Q10 found 15+ accounts with gaps >= 180 days followed by sudden large
+  transactions. Reactivation amounts ranged $10k–$50k, significantly above
+  the account's historical average (z-score > 4 in Q8).
+
+Pattern 7 — Unusual Amounts:
+  BEH-001 flagged 148 individual customers with transactions > $50k USD.
+  Q8 z-score analysis found 2,720 transactions with z > 4, with fraud accounts
+  accounting for a disproportionate share (typical z-score > 8 for P7 fraud).
+
+Pattern 8 — Cross-Account Smurfing:
+  STR-003 detected only 6 alerts (high-precision condition), but the broader
+  STR-002 and cross-account velocity analysis in Q5 captured the full picture
+  of coordinated multi-account sub-threshold deposits.
+
+═══════════════════════════════════════════════════════════════════════════════
+4. RULE ENGINE PERFORMANCE (Q4, Q19, Q23)
+═══════════════════════════════════════════════════════════════════════════════
+
+High-precision rules (>= 90%):
+  STR-001 Sub-threshold cash deposit:   100% precision, 218 alerts
+  STR-003 Cross-account smurfing:        100% precision, 6 alerts
+  VEL-001 Rapid transaction burst:       100% precision, 192 alerts
+  GEO-001 Sanctioned country:            100% precision, 9 alerts
+  GEO-002 Very high risk country:        100% precision, 24 alerts
+  BEH-001 Unusual large amount:           91.9% precision, 148 alerts
+
+Lower-precision rules (broad, generate leads):
+  GEO-003 High-risk country new cp:       7% precision, 17,813 alerts
+  VEL-003 24h volume spike:               8% precision, 10,493 alerts
+  BEH-002 Dormant activation:             8.2% precision, 5,947 alerts
+
+The low-precision rules are intentional: they cast a wide net for investigation.
+When combined with the composite scoring model, high-noise rules like GEO-003
+still produce value — they elevate scores when combined with other risk factors.
+
+Score calibration:
+  Rule co-occurrence analysis (Q15) shows that GEO-003 + VEL-003 + THR-002
+  frequently fire together on the same transaction, producing compound scores
+  of 50-70. These multi-rule alerts warrant priority attention.
+
+False positive concentration (Q23):
+  Low-risk, verified, non-PEP customers generate the majority of alerts from
+  broad rules. These are prime tuning targets: raising thresholds or adding
+  customer-type filters to VEL-003 and BEH-002 could reduce noise by ~40%
+  while retaining >95% of true positives.
+
+═══════════════════════════════════════════════════════════════════════════════
+5. GEOGRAPHIC RISK ANALYSIS (Q6, Q21)
+═══════════════════════════════════════════════════════════════════════════════
+
+Domestic transactions (no counterparty country) dominate by volume.
+International transaction risk matrix:
+
+Top alert-generating corridors:
+  1. Domestic ↔ High-risk countries (NG, PK, PH): 17,789 transactions
+  2. Domestic ↔ Medium-risk countries (MX, BR, IN): 20,185 transactions
+  3. Domestic ↔ Sanctioned (IR, KP, RU, CU): 9 transactions — all flagged
+
+The risk matrix (Q21) shows that even low-risk customers transacting with
+high-risk countries have elevated alert rates (23% vs 8% domestic), confirming
+that counterparty country is a strong independent risk signal.
+
+═══════════════════════════════════════════════════════════════════════════════
+6. NETWORK ANALYSIS (Q12, Q20)
+═══════════════════════════════════════════════════════════════════════════════
+
+Shared counterparty analysis (Q12) identified counterparty accounts used by
+2+ distinct customers. These shared nodes are potential money mule accounts or
+intermediary institutions in layering schemes.
+
+The 2-hop network analysis (Q20) revealed clusters of 3–5 accounts connected
+through shared counterparties, with several clusters generating 10+ alerts.
+The largest clusters correlate with the embedded layering (Pattern 5) fraud
+accounts.
+
+═══════════════════════════════════════════════════════════════════════════════
+7. CURRENCY AND THRESHOLD ANALYSIS (Q13, Q17)
+═══════════════════════════════════════════════════════════════════════════════
+
+USD dominates (60%+ of transactions by count and ~65% by USD-equivalent volume).
+EUR and GBP are the next-largest, consistent with the customer country distribution.
+
+Threshold sensitivity (Q17):
+  Setting alert threshold at 60+: 4,510 alerts (9.3% of all alerts)
+  Setting threshold at 50+:       37,125 alerts (76.7% of all alerts)
+  Setting threshold at 40+:       48,394 alerts (100%)
+
+Recommended triage threshold: 60+ for immediate investigation, 40-59 for
+batch review, <40 for statistical monitoring only.
+
+═══════════════════════════════════════════════════════════════════════════════
+8. NEW CUSTOMER RISK (Q18)
+═══════════════════════════════════════════════════════════════════════════════
+
+Customers in their first 90 days show materially different risk profiles:
+  First 90 days: higher new counterparty rate, more international wires,
+                 alert rate comparable to established customers but with
+                 larger average transaction amounts (onboarding effect)
+  After 90 days: more predictable patterns, lower velocity anomaly rate
+
+Recommendation: Apply enhanced monitoring (lower alert thresholds) for all
+accounts in their first 90 days, particularly for business accounts.
+
+═══════════════════════════════════════════════════════════════════════════════
+9. SYSTEM PERFORMANCE
+═══════════════════════════════════════════════════════════════════════════════
+
+Query optimization (EXPLAIN QUERY PLAN verified):
+  - All major query paths use covering indexes (no full table scans)
+  - Transaction timestamp range queries: COVERING INDEX idx_transactions_timestamp
+  - Alert score filtering: INDEX idx_alerts_score
+  - Velocity lookups: COVERING INDEX idx_enrichment_velocity_1h
+  - ETL batch processing: 1,000-row chunks, WAL journal mode
+
+ETL pipeline processes 198,891 enrichment records using a pre-built in-memory
+account timeline index for O(log n) per-transaction velocity lookups, completing
+in approximately 90 seconds.
+
+═══════════════════════════════════════════════════════════════════════════════
+10. RECOMMENDATIONS FOR PRODUCTION
+═══════════════════════════════════════════════════════════════════════════════
+
+1. TUNE BEH-002 (Dormant Activation): Add minimum account age check and
+   require velocity_7d = 0 for 2+ consecutive weeks, not just the current week.
+   This would reduce 5,947 → ~500 alerts while retaining true dormancy signals.
+
+2. ADD AGGREGATE STRUCTURING RULE: A 7-day rolling window rule that flags
+   customers with >$25,000 in cash deposits across any rolling week would
+   catch more P1/P8 fraud without the noise of STR-002's 24h window.
+
+3. IMPLEMENT ALERT SCORING DECAY: High-scoring alerts on consistently
+   "normal" customers should decay over time. PEP high-value alerts should
+   not repeatedly fire on the same recurring payment.
+
+4. NETWORK GRAPH INTEGRATION: The shared counterparty clusters (Q20) warrant
+   a proper graph database integration (e.g., Neo4j) for community detection
+   at scale.
+
+5. REAL-TIME VELOCITY: Move velocity calculations from batch ETL to a
+   streaming system (Kafka + Redis sorted sets) for real-time threshold alerts
+   during high-velocity fraud bursts.
+
+═══════════════════════════════════════════════════════════════════════════════
+END OF REPORT
+═══════════════════════════════════════════════════════════════════════════════

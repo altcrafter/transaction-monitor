@@ -1,0 +1,2179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SQL Analytics Showcase — TransactGuard AML</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <!-- Prism.js syntax highlighting -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+
+  <style>
+    /* ── Reset & Base ─────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #0d1117;
+      --card-bg:     #161b22;
+      --border:      #30363d;
+      --text:        #c9d1d9;
+      --text-muted:  #8b949e;
+      --accent:      #58a6ff;
+      --accent-dim:  #1f3a5c;
+      --code-bg:     #1e2a3a;
+      --radius:      10px;
+      --radius-sm:   6px;
+      --shadow:      0 4px 24px rgba(0,0,0,.45);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      min-height: 100vh;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Top nav bar ─────────────────────────────────────────────────── */
+    .top-nav {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(8px);
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+
+    .nav-brand .brand-icon { font-size: 1.1rem; }
+
+    .nav-back {
+      margin-left: auto;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: color .2s;
+    }
+    .nav-back:hover { color: var(--accent); text-decoration: none; }
+
+    /* ── Hero header ────────────────────────────────────────────────── */
+    .hero {
+      max-width: 1200px;
+      margin: 3rem auto 0;
+      padding: 0 2rem;
+      text-align: center;
+    }
+
+    .hero-eyebrow {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.75rem;
+    }
+
+    .hero h1 {
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      color: #e6edf3;
+      line-height: 1.2;
+      margin-bottom: 1rem;
+    }
+
+    .hero-subtitle {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      max-width: 680px;
+      margin: 0 auto 2.5rem;
+    }
+
+    /* ── Stats ribbon ────────────────────────────────────────────────── */
+    .stats-ribbon {
+      display: flex;
+      justify-content: center;
+      gap: 2.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 2.5rem;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-num {
+      font-size: 1.9rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: -0.03em;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      margin-top: 0.1rem;
+    }
+
+    /* ── Filter pills ────────────────────────────────────────────────── */
+    .filter-bar {
+      max-width: 1200px;
+      margin: 0 auto 2.5rem;
+      padding: 0 2rem;
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .filter-pill {
+      padding: 0.45rem 1.1rem;
+      border-radius: 99px;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .2s;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .filter-pill:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .filter-pill.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #0d1117;
+      font-weight: 600;
+    }
+
+    /* ── Cards grid ─────────────────────────────────────────────────── */
+    .cards-grid {
+      max-width: 1200px;
+      margin: 0 auto 5rem;
+      padding: 0 2rem;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+
+    /* ── Query card ──────────────────────────────────────────────────── */
+    .query-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      box-shadow: var(--shadow);
+      transition: border-color .25s, box-shadow .25s;
+    }
+
+    .query-card:hover {
+      border-color: #444c56;
+      box-shadow: 0 6px 32px rgba(0,0,0,.55);
+    }
+
+    .query-card.hidden { display: none; }
+
+    /* card header row */
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.1rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .category-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.3rem 0.75rem;
+      border-radius: 99px;
+      border: 1px solid;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .result-pill {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      background: #21262d;
+      border: 1px solid var(--border);
+      padding: 0.25rem 0.6rem;
+      border-radius: 99px;
+    }
+
+    /* title */
+    .query-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #e6edf3;
+      margin-bottom: 0.75rem;
+      letter-spacing: -0.015em;
+    }
+
+    .query-num {
+      color: var(--accent);
+      font-size: 0.85rem;
+      font-weight: 500;
+      display: block;
+      margin-bottom: 0.2rem;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    /* business question */
+    .business-question {
+      display: flex;
+      align-items: baseline;
+      gap: 0.6rem;
+      font-size: 0.93rem;
+      margin-bottom: 1.5rem;
+      padding: 0.75rem 1rem;
+      background: #1c2128;
+      border-left: 3px solid var(--accent);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    }
+
+    .bq-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      color: var(--accent);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .business-question em {
+      font-style: italic;
+      color: var(--text);
+    }
+
+    /* SQL block */
+    .sql-block-wrapper {
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      margin-bottom: 1.75rem;
+      border: 1px solid #253040;
+    }
+
+    .sql-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #182230;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid #253040;
+    }
+
+    .sql-lang-tag {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      color: #4a8ac4;
+    }
+
+    .copy-btn {
+      font-size: 0.72rem;
+      background: #1e2a3a;
+      border: 1px solid #30363d;
+      color: var(--text-muted);
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      transition: all .2s;
+    }
+
+    .copy-btn:hover { color: var(--accent); border-color: var(--accent); }
+    .copy-btn.copied { color: #3fb950; border-color: #3fb950; }
+
+    /* Override Prism tomorrow theme background to match our code-bg */
+    pre[class*="language-"] {
+      background: var(--code-bg) !important;
+      margin: 0 !important;
+      border-radius: 0 !important;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
+      font-size: 0.82rem !important;
+      line-height: 1.7 !important;
+      padding: 1.25rem 1.5rem !important;
+      overflow-x: auto;
+    }
+
+    code[class*="language-"] {
+      font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
+      font-size: 0.82rem !important;
+    }
+
+    /* ── Results table ───────────────────────────────────────────────── */
+    .results-heading, .interp-heading {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      margin-bottom: 0.5rem;
+    }
+
+    .results-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+      white-space: nowrap;
+    }
+
+    .results-table thead tr {
+      background: #1c2128;
+    }
+
+    .results-table th {
+      padding: 0.6rem 1rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--accent);
+      border-bottom: 1px solid var(--border);
+      letter-spacing: .04em;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+    }
+
+    .results-table td {
+      padding: 0.55rem 1rem;
+      border-bottom: 1px solid #21262d;
+      color: var(--text);
+    }
+
+    .results-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .results-table tbody tr:hover td {
+      background: #1c2128;
+    }
+
+    .results-table tbody tr:nth-child(even) td {
+      background: #0f1319;
+    }
+
+    .results-table tbody tr:nth-child(even):hover td {
+      background: #1c2128;
+    }
+
+    .row-note {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+    }
+
+    .no-data {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      padding: 1rem 0;
+      margin-bottom: 1.5rem;
+    }
+
+    /* ── Chart ───────────────────────────────────────────────────────── */
+    .chart-section {
+      margin-bottom: 1.75rem;
+    }
+
+    .chart-container {
+      background: #0f1319;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 1.25rem;
+      height: 260px;
+    }
+
+    /* ── Interpretation ──────────────────────────────────────────────── */
+    .interpretation {
+      padding: 1rem 1.25rem;
+      background: #0f1319;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+
+    .interpretation p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+    }
+
+    /* ── Footer ──────────────────────────────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 2.5rem 2rem;
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+
+    footer .footer-brand {
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    /* ── Scrollbar styling (webkit) ──────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: #444c56; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #6e7681; }
+
+    /* ── Responsive ──────────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .hero h1 { font-size: 1.6rem; }
+      .hero-subtitle { font-size: 0.9rem; }
+      .query-card { padding: 1.25rem; }
+      .stats-ribbon { gap: 1.5rem; }
+      .top-nav { padding: 0.75rem 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Top nav -->
+<nav class="top-nav">
+  <div class="nav-brand">
+    <span class="brand-icon">🗄️</span>
+    TransactGuard AML
+  </div>
+  <a class="nav-back" href="executive_dashboard.html">
+    ← Executive Dashboard
+  </a>
+</nav>
+
+<!-- Hero -->
+<header class="hero">
+  <p class="hero-eyebrow">Portfolio · SQL Proficiency Showcase</p>
+  <h1>🗄️ TransactGuard AML<br>SQL Analytics Showcase</h1>
+  <p class="hero-subtitle">
+    16 analytical queries demonstrating advanced SQL proficiency across
+    window functions, CTEs, aggregations, date analysis, JOINs, and statistical methods —
+    all executed against a real AML transaction database.
+  </p>
+
+  <div class="stats-ribbon">
+    <div class="stat-item">
+      <div class="stat-num">16</div>
+      <div class="stat-label">Queries</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">6</div>
+      <div class="stat-label">SQL Categories</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">50k+</div>
+      <div class="stat-label">Transactions Analyzed</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">6</div>
+      <div class="stat-label">Tables Queried</div>
+    </div>
+  </div>
+</header>
+
+<!-- Filter pills -->
+<div class="filter-bar">
+  <button class="filter-pill active" data-filter="all">All</button>
+<button class="filter-pill" data-filter="window">Window Functions</button>
+<button class="filter-pill" data-filter="cte">CTEs</button>
+<button class="filter-pill" data-filter="aggregation">Aggregation</button>
+<button class="filter-pill" data-filter="date">Date Analysis</button>
+<button class="filter-pill" data-filter="joins">JOINs</button>
+<button class="filter-pill" data-filter="statistical">Statistical</button>
+</div>
+
+<!-- Query cards -->
+<main class="cards-grid" id="cards-grid">
+  
+<div class="query-card" data-category="window" id="q1">
+  <div class="card-header">
+    <span class="category-badge"
+          style="color:#a371f7; background:#2d1f47; border-color:#a371f740;">
+      Window Functions
+    </span>
+    <div class="query-meta-right">
+      <span class="result-pill">8 cols · 10 rows</span>
+    </div>
+  </div>
+
+  <h2 class="query-title">
+    <span class="query-num">Query 1</span>
+    Customer Transaction Ranking
+  </h2>
+
+  <p class="business-question">
+    <span class="bq-label">Business Question</span>
+    <em>What is each customer&#x27;s largest transaction relative to their own history?</em>
+  </p>
+
+  <div class="sql-block-wrapper">
+    <div class="sql-toolbar">
+      <span class="sql-lang-tag">SQL · SQLite</span>
+      <button class="copy-btn" onclick="copySQL(this)">Copy</button>
+    </div>
+    <pre class="language-sql"><code class="language-sql">WITH ranked AS (
+    SELECT
+        c.customer_id,
+        c.name                                          AS customer_name,
+        t.transaction_id,
+        t.amount,
+        t.transaction_date,
+        RANK() OVER (
+            PARTITION BY c.customer_id
+            ORDER BY t.amount DESC
+        )                                               AS amount_rank,
+        COUNT(*) OVER (PARTITION BY c.customer_id)     AS total_txns,
+        ROUND(
+            t.amount /
+            SUM(t.amount) OVER (PARTITION BY c.customer_id) * 100,
+        2)                                              AS pct_of_customer_total
+    FROM transactions t
+    JOIN accounts  a ON t.account_id  = a.account_id
+    JOIN customers c ON a.customer_id = c.customer_id
+)
+SELECT *
+FROM ranked
+WHERE amount_rank = 1
+ORDER BY amount DESC
+LIMIT 10;</code></pre>
+  </div>
+
+  <div class="results-section">
+    <h3 class="results-heading">Results</h3>
+    <div class="table-wrapper"><table class="results-table"><thead><tr><th>customer_id</th><th>customer_name</th><th>transaction_id</th><th>amount</th><th>transaction_date</th><th>amount_rank</th><th>total_txns</th><th>pct_of_customer_total</th></tr></thead><tbody><tr><td>CUST00313</td><td>Mr. David Hopkins DDS</td><td>TXN00021507</td><td>4999942.14</td><td>2025-06-27 08:50:25</td><td>1</td><td>234</td><td>18.79</td></tr><tr><td>CUST00337</td><td>Shannon Bishop</td><td>TXN00049829</td><td>4998848.24</td><td>2026-01-11 08:34:15</td><td>1</td><td>92</td><td>55.78</td></tr><tr><td>CUST00339</td><td>Derek Hodge</td><td>TXN00029638</td><td>4996676.64</td><td>2025-10-16 10:29:13</td><td>1</td><td>163</td><td>30.25</td></tr><tr><td>CUST00390</td><td>Jason Pierce</td><td>TXN00024724</td><td>4995524.62</td><td>2025-04-26 21:55:04</td><td>1</td><td>73</td><td>59.55</td></tr><tr><td>CUST00357</td><td>Matthew Bowers</td><td>TXN00004737</td><td>4991812.24</td><td>2025-10-06 22:44:58</td><td>1</td><td>252</td><td>18.82</td></tr><tr><td>CUST00292</td><td>Ronald Miller</td><td>TXN00038351</td><td>4990643.84</td><td>2025-08-03 20:24:15</td><td>1</td><td>346</td><td>26.73</td></tr><tr><td>CUST00192</td><td>David Fowler</td><td>TXN00046605</td><td>4987974.4</td><td>2025-12-22 06:23:17</td><td>1</td><td>143</td><td>30.82</td></tr><tr><td>CUST00341</td><td>Jenna Thomas</td><td>TXN00004721</td><td>4982640.4</td><td>2026-02-19 09:52:05</td><td>1</td><td>144</td><td>23.03</td></tr><tr><td>CUST00382</td><td>Michael Mckenzie</td><td>TXN00024566</td><td>4973444.8</td><td>2025-03-19 14:53:57</td><td>1</td><td>189</td><td>15.04</td></tr><tr><td>CUST00003</td><td>Matthew Gardner</td><td>TXN00046999</td><td>4968781.79</td><td>2026-01-18 11:05:05</td><td>1</td><td>164</td><td>39.01</td></tr></tbody></table></div>
+  </div>
+
+  <div class="chart-section"><h3 class="results-heading">Visualization</h3>
+<div class="chart-container">
+  <canvas id="chart-q1" height="200"></canvas>
+</div>
+<script>
+(function() {
+  var ctx = document.getElementById('chart-q1').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ["Mr. David Hopkins DDS", "Shannon Bishop", "Derek Hodge", "Jason Pierce", "Matthew Bowers", "Ronald Miller", "David Fowler", "Jenna Thomas", "Michael Mckenzie", "Matthew Gardner"],
+      datasets: [{
+        label: "Largest Transaction (USD)",
+        data: [4999942.14, 4998848.24, 4996676.64, 4995524.62, 4991812.24, 4990643.84, 4987974.4, 4982640.4, 4973444.8, 4968781.79],
+        "backgroundColor": ["#58a6ff44","#a371f744","#3fb95044","#d2992244","#2ea6a644","#f8514944","#58a6ff44","#a371f744","#3fb95044","#d2992244"],
+        "borderColor": "#a371f7",
+        
+        borderWidth: 2,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#c9d1d9', font: { family: 'Inter' } } },
+        tooltip: { bodyColor: '#c9d1d9', titleColor: '#58a6ff' }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#8b949e', maxRotation: 35, font: { size: 10 } },
+          grid: { color: '#21262d' }
+        },
+        y: {
+          ticks: { color: '#8b949e' },
+          grid: { color: '#21262d' }
+        }
+      }
+    }
+  });
+})();
+</script></div>
+
+  <div class="interpretation">
+    <h3 class="interp-heading">Interpretation</h3>
+    <p>Each row shows the single highest-value transaction for a given customer alongside what percentage of that customer&#x27;s lifetime volume it represents. Customers whose top transaction accounts for an outsized share of their total volume are prime candidates for enhanced due diligence, as a single dominant payment can indicate structuring risk or an unusual business event.</p>
+  </div>
+</div>
+
+<div class="query-card" data-category="window" id="q2">
+  <div class="card-header">
+    <span class="category-badge"
+          style="color:#a371f7; background:#2d1f47; border-color:#a371f740;">
+      Window Functions
+    </span>
+    <div class="query-meta-right">
+      <span class="result-pill">5 cols · 10 rows</span>
+    </div>
+  </div>
+
+  <h2 class="query-title">
+    <span class="query-num">Query 2</span>
+    Rolling 7-Day Transaction Velocity
+  </h2>
+
+  <p class="business-question">
+    <span class="bq-label">Business Question</span>
+    <em>Which accounts show accelerating transaction velocity?</em>
+  </p>
+
+  <div class="sql-block-wrapper">
+    <div class="sql-toolbar">
+      <span class="sql-lang-tag">SQL · SQLite</span>
+      <button class="copy-btn" onclick="copySQL(this)">Copy</button>
+    </div>
+    <pre class="language-sql"><code class="language-sql">WITH daily AS (
+    SELECT
+        account_id,
+        DATE(transaction_date)   AS txn_day,
+        COUNT(*)                 AS daily_count,
+        SUM(amount)              AS daily_amount
+    FROM transactions
+    GROUP BY account_id, DATE(transaction_date)
+)
+SELECT
+    account_id,
+    txn_day,
+    daily_count,
+    SUM(daily_count) OVER (
+        PARTITION BY account_id
+        ORDER BY txn_day
+        ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
+    )                            AS rolling_7d_count,
+    ROUND(SUM(daily_amount) OVER (
+        PARTITION BY account_id
+        ORDER BY txn_day
+        ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
+    ), 2)                        AS rolling_7d_amount
+FROM daily
+ORDER BY rolling_7d_count DESC, rolling_7d_amount DESC
+LIMIT 10;</code></pre>
+  </div>
+
+  <div class="results-section">
+    <h3 class="results-heading">Results</h3>
+    <div class="table-wrapper"><table class="results-table"><thead><tr><th>account_id</th><th>txn_day</th><th>daily_count</th><th>rolling_7d_count</th><th>rolling_7d_amount</th></tr></thead><tbody><tr><td>ACCT000637</td><td>2025-06-30</td><td>2</td><td>34</td><td>12638100.86</td></tr><tr><td>ACCT000637</td><td>2025-07-04</td><td>1</td><td>34</td><td>12636509.91</td></tr><tr><td>ACCT000637</td><td>2025-06-21</td><td>25</td><td>33</td><td>8995428.43</td></tr><tr><td>ACCT000154</td><td>2025-05-20</td><td>24</td><td>33</td><td>2317647.55</td></tr><tr><td>ACCT000637</td><td>2025-07-12</td><td>1</td><td>32</td><td>12350275.8</td></tr><tr><td>ACCT000637</td><td>2025-07-17</td><td>1</td><td>32</td><td>12349636.22</td></tr><tr><td>ACCT000637</td><td>2025-07-05</td><td>1</td><td>32</td><td>12170967.61</td></tr><tr><td>ACCT000637</td><td>2025-07-20</td><td>1</td><td>32</td><td>9646357.69</td></tr><tr><td>ACCT000165</td><td>2025-07-18</td><td>1</td><td>32</td><td>8858871.53</td></tr><tr><td>ACCT000165</td><td>2025-07-12</td><td>25</td><td>32</td><td>8855428.44</td></tr></tbody></table></div>
+  </div>
+
+  <div class="chart-section"><h3 class="results-heading">Visualization</h3>
+<div class="chart-container">
+  <canvas id="chart-q2" height="200"></canvas>
+</div>
+<script>
+(function() {
+  var ctx = document.getElementById('chart-q2').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ["ACCT000637", "ACCT000637", "ACCT000637", "ACCT000154", "ACCT000637", "ACCT000637", "ACCT000637", "ACCT000637", "ACCT000165", "ACCT000165"],
+      datasets: [{
+        label: "Max 7-Day Transaction Count",
+        data: [34.0, 34.0, 33.0, 33.0, 32.0, 32.0, 32.0, 32.0, 32.0, 32.0],
+        "backgroundColor": ["#58a6ff44","#a371f744","#3fb95044","#d2992244","#2ea6a644","#f8514944","#58a6ff44","#a371f744","#3fb95044","#d2992244"],
+        "borderColor": "#a371f7",
+        
+        borderWidth: 2,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#c9d1d9', font: { family: 'Inter' } } },
+        tooltip: { bodyColor: '#c9d1d9', titleColor: '#58a6ff' }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#8b949e', maxRotation: 35, font: { size: 10 } },
+          grid: { color: '#21262d' }
+        },
+        y: {
+          ticks: { color: '#8b949e' },
+          grid: { color: '#21262d' }
+        }
+      }
+    }
+  });
+})();
+</script></div>
+
+  <div class="interpretation">
+    <h3 class="interp-heading">Interpretation</h3>
+    <p>Rolling 7-day counts smooth out daily noise and surface accounts with sustained high-frequency activity. Accounts at the top of this list maintained the highest transaction cadence over any consecutive 7-day window — a pattern associated with layering in AML typologies. Compliance teams should review these accounts for circular fund movements.</p>
+  </div>
+</div>
+
+<div class="query-card" data-category="window" id="q3">
+  <div class="card-header">
+    <span class="category-badge"
+          style="color:#a371f7; background:#2d1f47; border-color:#a371f740;">
+      Window Functions
+    </span>
+    <div class="query-meta-right">
+      <span class="result-pill">5 cols · 10 rows</span>
+    </div>
+  </div>
+
+  <h2 class="query-title">
+    <span class="query-num">Query 3</span>
+    Month-over-Month Volume Change
+  </h2>
+
+  <p class="business-question">
+    <span class="bq-label">Business Question</span>
+    <em>How has transaction volume trended month-over-month?</em>
+  </p>
+
+  <div class="sql-block-wrapper">
+    <div class="sql-toolbar">
+      <span class="sql-lang-tag">SQL · SQLite</span>
+      <button class="copy-btn" onclick="copySQL(this)">Copy</button>
+    </div>
+    <pre class="language-sql"><code class="language-sql">WITH monthly AS (
+    SELECT
+        strftime(&#x27;%Y-%m&#x27;, transaction_date)  AS month,
+        COUNT(*)                             AS txn_count,
+        ROUND(SUM(amount), 2)                AS total_volume
+    FROM transactions
+    GROUP BY month
+)
+SELECT
+    month,
+    txn_count,
+    total_volume,
+    LAG(total_volume) OVER (ORDER BY month)   AS prev_month_volume,
+    ROUND(
+        (total_volume - LAG(total_volume) OVER (ORDER BY month))
+        / LAG(total_volume) OVER (ORDER BY month) * 100,
+    2)                                         AS mom_pct_change
+FROM monthly
+ORDER BY month
+LIMIT 10;</code></pre>
+  </div>
+
+  <div class="results-section">
+    <h3 class="results-heading">Results</h3>
+    <div class="table-wrapper"><table class="results-table"><thead><tr><th>month</th><th>txn_count</th><th>total_volume</th><th>prev_month_volume</th><th>mom_pct_change</th></tr></thead><tbody><tr><td>2025-03</td><td>2552</td><td>238160518.18</td><td>—</td><td>—</td></tr><tr><td>2025-04</td><td>3989</td><td>366842382.03</td><td>238160518.18</td><td>54.03</td></tr><tr><td>2025-05</td><td>4073</td><td>348463807.97</td><td>366842382.03</td><td>-5.01</td></tr><tr><td>2025-06</td><td>4024</td><td>337684476.69</td><td>348463807.97</td><td>-3.09</td></tr><tr><td>2025-07</td><td>4125</td><td>309775666.28</td><td>337684476.69</td><td>-8.26</td></tr><tr><td>2025-08</td><td>4132</td><td>345331254.45</td><td>309775666.28</td><td>11.48</td></tr><tr><td>2025-09</td><td>3952</td><td>306080054.29</td><td>345331254.45</td><td>-11.37</td></tr><tr><td>2025-10</td><td>4144</td><td>329155463.05</td><td>306080054.29</td><td>7.54</td></tr><tr><td>2025-11</td><td>3888</td><td>309319350.99</td><td>329155463.05</td><td>-6.03</td></tr><tr><td>2025-12</td><td>4016</td><td>354264257.97</td><td>309319350.99</td><td>14.53</td></tr></tbody></table></div>
+  </div>
+
+  <div class="chart-section"><h3 class="results-heading">Visualization</h3>
+<div class="chart-container">
+  <canvas id="chart-q3" height="200"></canvas>
+</div>
+<script>
+(function() {
+  var ctx = document.getElementById('chart-q3').getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: ["2025-03", "2025-04", "2025-05", "2025-06", "2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12"],
+      datasets: [{
+        label: "MoM Volume Change (%)",
+        data: [0, 54.03, -5.01, -3.09, -8.26, 11.48, -11.37, 7.54, -6.03, 14.53],
+        "backgroundColor": "#a371f733",
+        "borderColor": "#a371f7",
+        "fill": false, "tension": 0.4,
+        borderWidth: 2,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#c9d1d9', font: { family: 'Inter' } } },
+        tooltip: { bodyColor: '#c9d1d9', titleColor: '#58a6ff' }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#8b949e', maxRotation: 35, font: { size: 10 } },
+          grid: { color: '#21262d' }
+        },
+        y: {
+          ticks: { color: '#8b949e' },
+          grid: { color: '#21262d' }
+        }
+      }
+    }
+  });
+})();
+</script></div>
+
+  <div class="interpretation">
+    <h3 class="interp-heading">Interpretation</h3>
+    <p>LAG() enables direct period-over-period comparison without a self-join. Months with large positive spikes in mom_pct_change warrant deeper investigation — they may reflect legitimate seasonal patterns or the onset of a coordinated fraud campaign. Negative months can indicate system outages, customer attrition, or the successful remediation of a fraud wave.</p>
+  </div>
+</div>
+
+<div class="query-card" data-category="window" id="q4">
+  <div class="card-header">
+    <span class="category-badge"
+          style="color:#a371f7; background:#2d1f47; border-color:#a371f740;">
+      Window Functions
+    </span>
+    <div class="query-meta-right">
+      <span class="result-pill">5 cols · 10 rows</span>
+    </div>
+  </div>
+
+  <h2 class="query-title">
+    <span class="query-num">Query 4</span>
+    Running Total by Customer
+  </h2>
+
+  <p class="business-question">
+    <span class="bq-label">Business Question</span>
+    <em>When did high-value customers hit significant volume milestones?</em>
+  </p>
+
+  <div class="sql-block-wrapper">
+    <div class="sql-toolbar">
+      <span class="sql-lang-tag">SQL · SQLite</span>
+      <button class="copy-btn" onclick="copySQL(this)">Copy</button>
+    </div>
+    <pre class="language-sql"><code class="language-sql">WITH running AS (
+    SELECT
+        c.customer_id,
+        c.name                              AS customer_name,
+        t.transaction_date,
+        t.amount,
+        SUM(t.amount) OVER (
+            PARTITION BY c.customer_id
+            ORDER BY t.transaction_date
+            ROWS UNBOUNDED PRECEDING
+        )                                   AS running_total
+    FROM transactions t
+    JOIN accounts  a ON t.account_id  = a.account_id
+    JOIN customers c ON a.customer_id = c.customer_id
+)
+SELECT
+    customer_id,
+    customer_name,
+    transaction_date,
+    ROUND(amount, 2)         AS txn_amount,
+    ROUND(running_total, 2)  AS running_total
+FROM running
+WHERE running_total &gt;= 100000
+ORDER BY customer_id, transaction_date
+LIMIT 10;</code></pre>
+  </div>
+
+  <div class="results-section">
+    <h3 class="results-heading">Results</h3>
+    <div class="table-wrapper"><table class="results-table"><thead><tr><th>customer_id</th><th>customer_name</th><th>transaction_date</th><th>txn_amount</th><th>running_total</th></tr></thead><tbody><tr><td>CUST00002</td><td>Leslie Johnson</td><td>2025-03-15 22:40:27</td><td>4192842.79</td><td>4192842.79</td></tr><tr><td>CUST00002</td><td>Leslie Johnson</td><td>2025-03-20 03:57:34</td><td>21368.84</td><td>4214211.63</td></tr><tr><td>CUST00002</td><td>Leslie Johnson</td><td>2025-03-20 21:49:03</td><td>2418.86</td><td>4216630.49</td></tr><tr><td>CUST00002</td><td>Leslie Johnson</td><td>2025-03-27 21:13:57</td><td>1309.89</td><td>4217940.38</td></tr><tr><td>CUST00002</td><td>Leslie Johnson</td><td>2025-03-31 16:32:59</td><td>4877.49</td><td>4222817.87</td></tr><tr><td>CUST00002</td><td>Leslie Johnson</td><td>2025-03-31 22:37:37</td><td>10705.88</td><td>4233523.75</td></tr><tr><td>CUST00002</td><td>Leslie Johnson</td><td>2025-04-01 14:38:32</td><td>44483.27</td><td>4278007.02</td></tr><tr><td>CUST00002</td><td>Leslie Johnson</td><td>2025-04-04 13:20:51</td><td>1994.25</td><td>4280001.27</td></tr><tr><td>CUST00002</td><td>Leslie Johnson</td><td>2025-04-07 00:41:33</td><td>33982.18</td><td>4313983.45</td></tr><tr><td>CUST00002</td><td>Leslie Johnson</td><td>2025-04-11 16:24:18</td><td>859.17</td><td>4314842.62</td></tr></tbody></table></div>
+  </div>
+
+  
+
+  <div class="interpretation">
+    <h3 class="interp-heading">Interpretation</h3>
+    <p>Running totals expose the exact moment a customer crosses a material volume threshold. The $100,000 mark is significant in AML contexts: customers crossing it quickly after account opening may be attempting rapid fund placement before regulatory reporting triggers. This query can be parameterized per threshold to power automated milestone alerts.</p>
+  </div>
+</div>
+
+<div class="query-card" data-category="window" id="q5">
+  <div class="card-header">
+    <span class="category-badge"
+          style="color:#a371f7; background:#2d1f47; border-color:#a371f740;">
+      Window Functions
+    </span>
+    <div class="query-meta-right">
+      <span class="result-pill">4 cols · 5 rows</span>
+    </div>
+  </div>
+
+  <h2 class="query-title">
+    <span class="query-num">Query 5</span>
+    Percentile Distribution of Transaction Sizes
+  </h2>
+
+  <p class="business-question">
+    <span class="bq-label">Business Question</span>
+    <em>What is the distribution of transaction sizes across the platform?</em>
+  </p>
+
+  <div class="sql-block-wrapper">
+    <div class="sql-toolbar">
+      <span class="sql-lang-tag">SQL · SQLite</span>
+      <button class="copy-btn" onclick="copySQL(this)">Copy</button>
+    </div>
+    <pre class="language-sql"><code class="language-sql">WITH percentiles AS (
+    SELECT
+        amount,
+        NTILE(100) OVER (ORDER BY amount)  AS percentile
+    FROM transactions
+)
+SELECT
+    percentile,
+    ROUND(MIN(amount), 2)  AS min_in_bucket,
+    ROUND(MAX(amount), 2)  AS max_in_bucket,
+    COUNT(*)               AS txn_count
+FROM percentiles
+WHERE percentile IN (50, 75, 90, 95, 99)
+GROUP BY percentile
+ORDER BY percentile;</code></pre>
+  </div>
+
+  <div class="results-section">
+    <h3 class="results-heading">Results</h3>
+    <div class="table-wrapper"><table class="results-table"><thead><tr><th>percentile</th><th>min_in_bucket</th><th>max_in_bucket</th><th>txn_count</th></tr></thead><tbody><tr><td>50</td><td>3557.09</td><td>3627.36</td><td>500</td></tr><tr><td>75</td><td>15488.15</td><td>17886.75</td><td>500</td></tr><tr><td>90</td><td>48856.44</td><td>65903.84</td><td>500</td></tr><tr><td>95</td><td>271410.71</td><td>328277.08</td><td>500</td></tr><tr><td>99</td><td>499385.09</td><td>2631321.35</td><td>500</td></tr></tbody></table></div>
+  </div>
+
+  <div class="chart-section"><h3 class="results-heading">Visualization</h3>
+<div class="chart-container">
+  <canvas id="chart-q5" height="200"></canvas>
+</div>
+<script>
+(function() {
+  var ctx = document.getElementById('chart-q5').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ["50", "75", "90", "95", "99"],
+      datasets: [{
+        label: "Transaction Amount at Percentile",
+        data: [3627.36, 17886.75, 65903.84, 328277.08, 2631321.35],
+        "backgroundColor": ["#58a6ff44","#a371f744","#3fb95044","#d2992244","#2ea6a644","#f8514944","#58a6ff44","#a371f744","#3fb95044","#d2992244"],
+        "borderColor": "#a371f7",
+        
+        borderWidth: 2,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#c9d1d9', font: { family: 'Inter' } } },
+        tooltip: { bodyColor: '#c9d1d9', titleColor: '#58a6ff' }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#8b949e', maxRotation: 35, font: { size: 10 } },
+          grid: { color: '#21262d' }
+        },
+        y: {
+          ticks: { color: '#8b949e' },
+          grid: { color: '#21262d' }
+        }
+      }
+    }
+  });
+})();
+</script></div>
+
+  <div class="interpretation">
+    <h3 class="interp-heading">Interpretation</h3>
+    <p>NTILE(100) partitions all transactions into 100 equal-sized buckets by amount, allowing us to read off precise percentile thresholds. The p99 value is particularly useful as a dynamic threshold for large-transaction alerts — it adapts to the actual distribution rather than relying on static dollar cutoffs that become stale over time.</p>
+  </div>
+</div>
+
+<div class="query-card" data-category="cte" id="q6">
+  <div class="card-header">
+    <span class="category-badge"
+          style="color:#58a6ff; background:#1a2a3a; border-color:#58a6ff40;">
+      CTEs
+    </span>
+    <div class="query-meta-right">
+      <span class="result-pill">8 cols · 10 rows</span>
+    </div>
+  </div>
+
+  <h2 class="query-title">
+    <span class="query-num">Query 6</span>
+    Alert Investigation Chain
+  </h2>
+
+  <p class="business-question">
+    <span class="bq-label">Business Question</span>
+    <em>Which customers with critical alerts also have the highest alert frequency?</em>
+  </p>
+
+  <div class="sql-block-wrapper">
+    <div class="sql-toolbar">
+      <span class="sql-lang-tag">SQL · SQLite</span>
+      <button class="copy-btn" onclick="copySQL(this)">Copy</button>
+    </div>
+    <pre class="language-sql"><code class="language-sql">WITH critical_alerts AS (
+    SELECT alert_id, transaction_id, customer_id, flagged_amount
+    FROM alerts
+    WHERE severity = &#x27;critical&#x27;
+),
+customer_alert_counts AS (
+    SELECT customer_id,
+           COUNT(*)                          AS total_alerts,
+           ROUND(SUM(flagged_amount), 2)     AS total_flagged_amount
+    FROM alerts
+    GROUP BY customer_id
+),
+enriched AS (
+    SELECT
+        ca.customer_id,
+        c.name,
+        c.risk_rating,
+        c.kyc_status,
+        ROUND(ca.flagged_amount, 2)          AS critical_flagged_amt,
+        cac.total_alerts,
+        cac.total_flagged_amount,
+        ROUND(
+            CAST(cac.total_alerts AS REAL) /
+            (SELECT COUNT(*) FROM alerts) * 100,
+        2)                                   AS alert_rate_pct
+    FROM critical_alerts ca
+    JOIN customers c
+        ON ca.customer_id = c.customer_id
+    JOIN customer_alert_counts cac
+        ON ca.customer_id = cac.customer_id
+)
+SELECT DISTINCT *
+FROM enriched
+ORDER BY total_alerts DESC, critical_flagged_amt DESC
+LIMIT 10;</code></pre>
+  </div>
+
+  <div class="results-section">
+    <h3 class="results-heading">Results</h3>
+    <div class="table-wrapper"><table class="results-table"><thead><tr><th>customer_id</th><th>name</th><th>risk_rating</th><th>kyc_status</th><th>critical_flagged_amt</th><th>total_alerts</th><th>total_flagged_amount</th><th>alert_rate_pct</th></tr></thead><tbody><tr><td>CUST00385</td><td>Ronald Haas</td><td>high</td><td>verified</td><td>37097.91</td><td>18</td><td>211488.26</td><td>0.9</td></tr><tr><td>CUST00385</td><td>Ronald Haas</td><td>high</td><td>verified</td><td>25869.37</td><td>18</td><td>211488.26</td><td>0.9</td></tr><tr><td>CUST00278</td><td>Benjamin Ballard</td><td>high</td><td>verified</td><td>23325.95</td><td>18</td><td>471725.1</td><td>0.9</td></tr><tr><td>CUST00076</td><td>Raymond Jefferson</td><td>high</td><td>verified</td><td>12651.92</td><td>18</td><td>6152575.79</td><td>0.9</td></tr><tr><td>CUST00278</td><td>Benjamin Ballard</td><td>high</td><td>verified</td><td>9074.39</td><td>18</td><td>471725.1</td><td>0.9</td></tr><tr><td>CUST00278</td><td>Benjamin Ballard</td><td>high</td><td>verified</td><td>4812.66</td><td>18</td><td>471725.1</td><td>0.9</td></tr><tr><td>CUST00385</td><td>Ronald Haas</td><td>high</td><td>verified</td><td>3993.6</td><td>18</td><td>211488.26</td><td>0.9</td></tr><tr><td>CUST00076</td><td>Raymond Jefferson</td><td>high</td><td>verified</td><td>3773.44</td><td>18</td><td>6152575.79</td><td>0.9</td></tr><tr><td>CUST00385</td><td>Ronald Haas</td><td>high</td><td>verified</td><td>2889.47</td><td>18</td><td>211488.26</td><td>0.9</td></tr><tr><td>CUST00076</td><td>Raymond Jefferson</td><td>high</td><td>verified</td><td>2500.61</td><td>18</td><td>6152575.79</td><td>0.9</td></tr></tbody></table></div>
+  </div>
+
+  <div class="chart-section"><h3 class="results-heading">Visualization</h3>
+<div class="chart-container">
+  <canvas id="chart-q6" height="200"></canvas>
+</div>
+<script>
+(function() {
+  var ctx = document.getElementById('chart-q6').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ["Ronald Haas", "Ronald Haas", "Benjamin Ballard", "Raymond Jefferson", "Benjamin Ballard", "Benjamin Ballard", "Ronald Haas", "Raymond Jefferson", "Ronald Haas", "Raymond Jefferson"],
+      datasets: [{
+        label: "Total Alerts per Customer",
+        data: [18.0, 18.0, 18.0, 18.0, 18.0, 18.0, 18.0, 18.0, 18.0, 18.0],
+        "backgroundColor": ["#58a6ff44","#a371f744","#3fb95044","#d2992244","#2ea6a644","#f8514944","#58a6ff44","#a371f744","#3fb95044","#d2992244"],
+        "borderColor": "#58a6ff",
+        
+        borderWidth: 2,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#c9d1d9', font: { family: 'Inter' } } },
+        tooltip: { bodyColor: '#c9d1d9', titleColor: '#58a6ff' }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#8b949e', maxRotation: 35, font: { size: 10 } },
+          grid: { color: '#21262d' }
+        },
+        y: {
+          ticks: { color: '#8b949e' },
+          grid: { color: '#21262d' }
+        }
+      }
+    }
+  });
+})();
+</script></div>
+
+  <div class="interpretation">
+    <h3 class="interp-heading">Interpretation</h3>
+    <p>This four-step CTE mirrors the mental workflow an analyst follows during alert triage: find the worst alerts, look up total exposure, layer in customer profile data, and compute a platform-relative alert rate. Customers appearing here carry both critical individual flags and disproportionate overall alert frequency — the highest-priority investigation targets in any AML queue.</p>
+  </div>
+</div>
+
+<div class="query-card" data-category="cte" id="q7">
+  <div class="card-header">
+    <span class="category-badge"
+          style="color:#58a6ff; background:#1a2a3a; border-color:#58a6ff40;">
+      CTEs
+    </span>
+    <div class="query-meta-right">
+      <span class="result-pill">9 cols · 0 rows</span>
+    </div>
+  </div>
+
+  <h2 class="query-title">
+    <span class="query-num">Query 7</span>
+    Structuring Detection CTE
+  </h2>
+
+  <p class="business-question">
+    <span class="bq-label">Business Question</span>
+    <em>Which customers show classic structuring behavior?</em>
+  </p>
+
+  <div class="sql-block-wrapper">
+    <div class="sql-toolbar">
+      <span class="sql-lang-tag">SQL · SQLite</span>
+      <button class="copy-btn" onclick="copySQL(this)">Copy</button>
+    </div>
+    <pre class="language-sql"><code class="language-sql">WITH same_day_txns AS (
+    SELECT
+        a.customer_id,
+        DATE(t.transaction_date)  AS txn_day,
+        COUNT(*)                  AS txn_count,
+        ROUND(SUM(t.amount), 2)   AS day_total,
+        ROUND(MIN(t.amount), 2)   AS min_amt,
+        ROUND(MAX(t.amount), 2)   AS max_amt
+    FROM transactions t
+    JOIN accounts a ON t.account_id = a.account_id
+    WHERE t.amount BETWEEN 8000 AND 9999
+    GROUP BY a.customer_id, DATE(t.transaction_date)
+    HAVING COUNT(*) &gt;= 3
+),
+customer_detail AS (
+    SELECT
+        s.*,
+        c.name,
+        c.risk_rating,
+        c.kyc_status
+    FROM same_day_txns s
+    JOIN customers c ON s.customer_id = c.customer_id
+)
+SELECT *
+FROM customer_detail
+ORDER BY txn_count DESC, day_total DESC
+LIMIT 10;</code></pre>
+  </div>
+
+  <div class="results-section">
+    <h3 class="results-heading">Results</h3>
+    <div class="table-wrapper"><table class="results-table"><thead><tr><th>customer_id</th><th>txn_day</th><th>txn_count</th><th>day_total</th><th>min_amt</th><th>max_amt</th><th>name</th><th>risk_rating</th><th>kyc_status</th></tr></thead><tbody></tbody></table></div>
+  </div>
+
+  <div class="chart-section"><h3 class="results-heading">Visualization</h3>
+<div class="chart-container">
+  <canvas id="chart-q7" height="200"></canvas>
+</div>
+<script>
+(function() {
+  var ctx = document.getElementById('chart-q7').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: [],
+      datasets: [{
+        label: "Same-Day Sub-$10K Transactions",
+        data: [],
+        "backgroundColor": ["#58a6ff44","#a371f744","#3fb95044","#d2992244","#2ea6a644","#f8514944","#58a6ff44","#a371f744","#3fb95044","#d2992244"],
+        "borderColor": "#58a6ff",
+        
+        borderWidth: 2,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#c9d1d9', font: { family: 'Inter' } } },
+        tooltip: { bodyColor: '#c9d1d9', titleColor: '#58a6ff' }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#8b949e', maxRotation: 35, font: { size: 10 } },
+          grid: { color: '#21262d' }
+        },
+        y: {
+          ticks: { color: '#8b949e' },
+          grid: { color: '#21262d' }
+        }
+      }
+    }
+  });
+})();
+</script></div>
+
+  <div class="interpretation">
+    <h3 class="interp-heading">Interpretation</h3>
+    <p>Structuring — deliberately breaking large amounts into sub-$10,000 transactions to evade Currency Transaction Report thresholds — is a federal crime (31 U.S.C. § 5324). This CTE isolates days where a single customer placed three or more transactions in the $8,000–$9,999 range. The combination of high count and tightly clustered amounts is a strong behavioral signal for SAR filing consideration.</p>
+  </div>
+</div>
+
+<div class="query-card" data-category="cte" id="q8">
+  <div class="card-header">
+    <span class="category-badge"
+          style="color:#58a6ff; background:#1a2a3a; border-color:#58a6ff40;">
+      CTEs
+    </span>
+    <div class="query-meta-right">
+      <span class="result-pill">5 cols · 2 rows</span>
+    </div>
+  </div>
+
+  <h2 class="query-title">
+    <span class="query-num">Query 8</span>
+    Customer Tier Analysis
+  </h2>
+
+  <p class="business-question">
+    <span class="bq-label">Business Question</span>
+    <em>How does alert rate vary across customer value tiers?</em>
+  </p>
+
+  <div class="sql-block-wrapper">
+    <div class="sql-toolbar">
+      <span class="sql-lang-tag">SQL · SQLite</span>
+      <button class="copy-btn" onclick="copySQL(this)">Copy</button>
+    </div>
+    <pre class="language-sql"><code class="language-sql">WITH customer_volume AS (
+    SELECT
+        c.customer_id,
+        c.name,
+        c.risk_rating,
+        ROUND(SUM(t.amount), 2)   AS lifetime_volume
+    FROM customers c
+    JOIN accounts  a ON c.customer_id = a.customer_id
+    JOIN transactions t ON a.account_id = t.account_id
+    GROUP BY c.customer_id, c.name, c.risk_rating
+),
+tiered AS (
+    SELECT *,
+        CASE
+            WHEN lifetime_volume &gt;= 500000 THEN &#x27;Platinum&#x27;
+            WHEN lifetime_volume &gt;= 200000 THEN &#x27;Gold&#x27;
+            WHEN lifetime_volume &gt;= 50000  THEN &#x27;Silver&#x27;
+            ELSE &#x27;Bronze&#x27;
+        END AS tier
+    FROM customer_volume
+),
+tier_alerts AS (
+    SELECT
+        t.tier,
+        COUNT(DISTINCT t.customer_id)              AS customers,
+        ROUND(AVG(t.lifetime_volume), 2)           AS avg_volume,
+        COUNT(a.alert_id)                          AS total_alerts,
+        ROUND(
+            CAST(COUNT(a.alert_id) AS REAL) /
+            COUNT(DISTINCT t.customer_id),
+        2)                                         AS avg_alerts_per_customer
+    FROM tiered t
+    LEFT JOIN alerts a ON t.customer_id = a.customer_id
+    GROUP BY t.tier
+)
+SELECT *
+FROM tier_alerts
+ORDER BY avg_volume DESC;</code></pre>
+  </div>
+
+  <div class="results-section">
+    <h3 class="results-heading">Results</h3>
+    <div class="table-wrapper"><table class="results-table"><thead><tr><th>tier</th><th>customers</th><th>avg_volume</th><th>total_alerts</th><th>avg_alerts_per_customer</th></tr></thead><tbody><tr><td>Platinum</td><td>345</td><td>15277736.8</td><td>1999</td><td>5.79</td></tr><tr><td>Gold</td><td>2</td><td>254167.41</td><td>1</td><td>0.5</td></tr></tbody></table></div>
+  </div>
+
+  <div class="chart-section"><h3 class="results-heading">Visualization</h3>
+<div class="chart-container">
+  <canvas id="chart-q8" height="200"></canvas>
+</div>
+<script>
+(function() {
+  var ctx = document.getElementById('chart-q8').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ["Platinum", "Gold"],
+      datasets: [{
+        label: "Avg Alerts per Customer by Tier",
+        data: [5.79, 0.5],
+        "backgroundColor": ["#58a6ff44","#a371f744","#3fb95044","#d2992244","#2ea6a644","#f8514944","#58a6ff44","#a371f744","#3fb95044","#d2992244"],
+        "borderColor": "#58a6ff",
+        
+        borderWidth: 2,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#c9d1d9', font: { family: 'Inter' } } },
+        tooltip: { bodyColor: '#c9d1d9', titleColor: '#58a6ff' }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#8b949e', maxRotation: 35, font: { size: 10 } },
+          grid: { color: '#21262d' }
+        },
+        y: {
+          ticks: { color: '#8b949e' },
+          grid: { color: '#21262d' }
+        }
+      }
+    }
+  });
+})();
+</script></div>
+
+  <div class="interpretation">
+    <h3 class="interp-heading">Interpretation</h3>
+    <p>Segmenting customers into value tiers reveals whether higher-revenue relationships carry proportionally higher compliance cost. If Platinum customers generate far more alerts per head than Bronze customers, the institution may need enhanced monitoring controls specifically tuned to high-value accounts. This analysis informs risk-based resource allocation across the compliance function.</p>
+  </div>
+</div>
+
+<div class="query-card" data-category="aggregation" id="q9">
+  <div class="card-header">
+    <span class="category-badge"
+          style="color:#3fb950; background:#1a2e1a; border-color:#3fb95040;">
+      Aggregation
+    </span>
+    <div class="query-meta-right">
+      <span class="result-pill">8 cols · 10 rows</span>
+    </div>
+  </div>
+
+  <h2 class="query-title">
+    <span class="query-num">Query 9</span>
+    Multi-Dimensional Alert Summary
+  </h2>
+
+  <p class="business-question">
+    <span class="bq-label">Business Question</span>
+    <em>What is the complete breakdown of alerts across all classification dimensions?</em>
+  </p>
+
+  <div class="sql-block-wrapper">
+    <div class="sql-toolbar">
+      <span class="sql-lang-tag">SQL · SQLite</span>
+      <button class="copy-btn" onclick="copySQL(this)">Copy</button>
+    </div>
+    <pre class="language-sql"><code class="language-sql">SELECT
+    r.rule_category,
+    a.severity,
+    a.status,
+    COUNT(*)                                   AS alert_count,
+    ROUND(SUM(a.flagged_amount), 2)            AS total_flagged,
+    ROUND(AVG(a.flagged_amount), 2)            AS avg_flagged,
+    SUM(CASE WHEN a.severity = &#x27;critical&#x27;
+             THEN 1 ELSE 0 END)                AS critical_count,
+    SUM(CASE WHEN a.status IN
+             (&#x27;true_positive&#x27;,&#x27;escalated&#x27;)
+             THEN 1 ELSE 0 END)                AS confirmed_count
+FROM alerts a
+JOIN rules r ON a.rule_id = r.rule_id
+GROUP BY r.rule_category, a.severity, a.status
+ORDER BY total_flagged DESC
+LIMIT 10;</code></pre>
+  </div>
+
+  <div class="results-section">
+    <h3 class="results-heading">Results</h3>
+    <div class="table-wrapper"><table class="results-table"><thead><tr><th>rule_category</th><th>severity</th><th>status</th><th>alert_count</th><th>total_flagged</th><th>avg_flagged</th><th>critical_count</th><th>confirmed_count</th></tr></thead><tbody><tr><td>behavior</td><td>high</td><td>new</td><td>66</td><td>13708795.32</td><td>207709.02</td><td>0</td><td>0</td></tr><tr><td>behavior</td><td>medium</td><td>new</td><td>86</td><td>9082179.22</td><td>105606.74</td><td>0</td><td>0</td></tr><tr><td>structuring</td><td>low</td><td>under_review</td><td>22</td><td>6809824.48</td><td>309537.48</td><td>0</td><td>0</td></tr><tr><td>geographic</td><td>medium</td><td>new</td><td>51</td><td>6735379.43</td><td>132066.26</td><td>0</td><td>0</td></tr><tr><td>structuring</td><td>medium</td><td>escalated</td><td>31</td><td>6608765.14</td><td>213185.97</td><td>0</td><td>31</td></tr><tr><td>velocity</td><td>medium</td><td>under_review</td><td>20</td><td>6553004.53</td><td>327650.23</td><td>0</td><td>0</td></tr><tr><td>structuring</td><td>critical</td><td>under_review</td><td>28</td><td>6065287.17</td><td>216617.4</td><td>28</td><td>0</td></tr><tr><td>velocity</td><td>medium</td><td>escalated</td><td>17</td><td>5987769.33</td><td>352221.73</td><td>0</td><td>17</td></tr><tr><td>behavior</td><td>medium</td><td>under_review</td><td>45</td><td>5038574.69</td><td>111968.33</td><td>0</td><td>0</td></tr><tr><td>geographic</td><td>high</td><td>new</td><td>38</td><td>4970609.2</td><td>130805.51</td><td>0</td><td>0</td></tr></tbody></table></div>
+  </div>
+
+  
+
+  <div class="interpretation">
+    <h3 class="interp-heading">Interpretation</h3>
+    <p>A three-dimensional GROUP BY (category × severity × status) produces a compliance heat-map without requiring a BI tool. The confirmed_count column — derived via conditional SUM(CASE WHEN) — isolates actionable intelligence from noise. Rule categories with high total_flagged but low confirmed_count are candidates for threshold recalibration to reduce false-positive burden.</p>
+  </div>
+</div>
+
+<div class="query-card" data-category="aggregation" id="q10">
+  <div class="card-header">
+    <span class="category-badge"
+          style="color:#3fb950; background:#1a2e1a; border-color:#3fb95040;">
+      Aggregation
+    </span>
+    <div class="query-meta-right">
+      <span class="result-pill">10 cols · 15 rows</span>
+    </div>
+  </div>
+
+  <h2 class="query-title">
+    <span class="query-num">Query 10</span>
+    Rule Performance Metrics (Precision / Recall / F1)
+  </h2>
+
+  <p class="business-question">
+    <span class="bq-label">Business Question</span>
+    <em>Which AML rules have the best precision-recall tradeoff?</em>
+  </p>
+
+  <div class="sql-block-wrapper">
+    <div class="sql-toolbar">
+      <span class="sql-lang-tag">SQL · SQLite</span>
+      <button class="copy-btn" onclick="copySQL(this)">Copy</button>
+    </div>
+    <pre class="language-sql"><code class="language-sql">SELECT
+    rule_id,
+    rule_name,
+    rule_category,
+    true_positives,
+    false_positives,
+    total_alerts_generated,
+    ROUND(
+        CAST(true_positives AS REAL) /
+        (true_positives + false_positives + 0.0001),
+    4)                               AS precision_sql,
+    ROUND(precision_score,  4)       AS precision_stored,
+    ROUND(recall_score,     4)       AS recall_stored,
+    ROUND(
+        2.0 * precision_score * recall_score /
+        (precision_score + recall_score + 0.0001),
+    4)                               AS f1_score
+FROM rules
+WHERE enabled = 1
+ORDER BY f1_score DESC;</code></pre>
+  </div>
+
+  <div class="results-section">
+    <h3 class="results-heading">Results</h3>
+    <div class="table-wrapper"><table class="results-table"><thead><tr><th>rule_id</th><th>rule_name</th><th>rule_category</th><th>true_positives</th><th>false_positives</th><th>total_alerts_generated</th><th>precision_sql</th><th>precision_stored</th><th>recall_stored</th><th>f1_score</th></tr></thead><tbody><tr><td>14</td><td>Smurfing Detection</td><td>structuring</td><td>219</td><td>69</td><td>288</td><td>0.7604</td><td>0.7638</td><td>0.8433</td><td>0.8015</td></tr><tr><td>10</td><td>New Account High Value</td><td>behavior</td><td>469</td><td>130</td><td>599</td><td>0.783</td><td>0.7843</td><td>0.7284</td><td>0.7553</td></tr><tr><td>12</td><td>Sanctions Country</td><td>geographic</td><td>334</td><td>86</td><td>420</td><td>0.7952</td><td>0.7976</td><td>0.6783</td><td>0.7331</td></tr><tr><td>11</td><td>PEP Transaction</td><td>network</td><td>543</td><td>72</td><td>615</td><td>0.8829</td><td>0.8839</td><td>0.5703</td><td>0.6932</td></tr><tr><td>8</td><td>Cross-Border Wire</td><td>geographic</td><td>125</td><td>19</td><td>144</td><td>0.8681</td><td>0.8743</td><td>0.5515</td><td>0.6763</td></tr><tr><td>7</td><td>Multiple Small Deposits</td><td>structuring</td><td>150</td><td>59</td><td>209</td><td>0.7177</td><td>0.7189</td><td>0.5531</td><td>0.6251</td></tr><tr><td>15</td><td>Business Account Personal Use</td><td>behavior</td><td>223</td><td>200</td><td>423</td><td>0.5272</td><td>0.5281</td><td>0.604</td><td>0.5635</td></tr><tr><td>2</td><td>Structuring Detection</td><td>structuring</td><td>321</td><td>421</td><td>742</td><td>0.4326</td><td>0.4339</td><td>0.7314</td><td>0.5446</td></tr><tr><td>6</td><td>Dormant Account Activity</td><td>behavior</td><td>24</td><td>32</td><td>56</td><td>0.4286</td><td>0.4323</td><td>0.6652</td><td>0.524</td></tr><tr><td>5</td><td>Round Dollar Amounts</td><td>behavior</td><td>254</td><td>354</td><td>608</td><td>0.4178</td><td>0.4193</td><td>0.6924</td><td>0.5223</td></tr></tbody></table></div><p class="row-note">Showing 10 of 15 rows</p>
+  </div>
+
+  <div class="chart-section"><h3 class="results-heading">Visualization</h3>
+<div class="chart-container">
+  <canvas id="chart-q10" height="200"></canvas>
+</div>
+<script>
+(function() {
+  var ctx = document.getElementById('chart-q10').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ["Smurfing Detection", "New Account High Value", "Sanctions Country", "PEP Transaction", "Cross-Border Wire", "Multiple Small Deposits", "Business Account Personal Use", "Structuring Detection", "Dormant Account Activity", "Round Dollar Amounts"],
+      datasets: [{
+        label: "F1 Score by Rule",
+        data: [0.8015, 0.7553, 0.7331, 0.6932, 0.6763, 0.6251, 0.5635, 0.5446, 0.524, 0.5223],
+        "backgroundColor": ["#58a6ff44","#a371f744","#3fb95044","#d2992244","#2ea6a644","#f8514944","#58a6ff44","#a371f744","#3fb95044","#d2992244"],
+        "borderColor": "#3fb950",
+        
+        borderWidth: 2,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#c9d1d9', font: { family: 'Inter' } } },
+        tooltip: { bodyColor: '#c9d1d9', titleColor: '#58a6ff' }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#8b949e', maxRotation: 35, font: { size: 10 } },
+          grid: { color: '#21262d' }
+        },
+        y: {
+          ticks: { color: '#8b949e' },
+          grid: { color: '#21262d' }
+        }
+      }
+    }
+  });
+})();
+</script></div>
+
+  <div class="interpretation">
+    <h3 class="interp-heading">Interpretation</h3>
+    <p>Computing F1 = 2·P·R / (P+R) directly in SQL eliminates the need to export data to Python or Excel for rule evaluation. Rules with high F1 (&gt;0.7) reliably identify true suspicious activity; rules below 0.4 generate more noise than signal and should be reviewed for threshold adjustment or retirement. This query can be scheduled as a weekly rule-health report.</p>
+  </div>
+</div>
+
+<div class="query-card" data-category="date" id="q11">
+  <div class="card-header">
+    <span class="category-badge"
+          style="color:#d29922; background:#2e2a10; border-color:#d2992240;">
+      Date Analysis
+    </span>
+    <div class="query-meta-right">
+      <span class="result-pill">5 cols · 10 rows</span>
+    </div>
+  </div>
+
+  <h2 class="query-title">
+    <span class="query-num">Query 11</span>
+    Day-of-Week &amp; Hour-of-Day Pattern
+  </h2>
+
+  <p class="business-question">
+    <span class="bq-label">Business Question</span>
+    <em>When are high-value transactions most likely to occur?</em>
+  </p>
+
+  <div class="sql-block-wrapper">
+    <div class="sql-toolbar">
+      <span class="sql-lang-tag">SQL · SQLite</span>
+      <button class="copy-btn" onclick="copySQL(this)">Copy</button>
+    </div>
+    <pre class="language-sql"><code class="language-sql">SELECT
+    CASE CAST(strftime(&#x27;%w&#x27;, transaction_date) AS INTEGER)
+        WHEN 0 THEN &#x27;Sunday&#x27;    WHEN 1 THEN &#x27;Monday&#x27;
+        WHEN 2 THEN &#x27;Tuesday&#x27;   WHEN 3 THEN &#x27;Wednesday&#x27;
+        WHEN 4 THEN &#x27;Thursday&#x27;  WHEN 5 THEN &#x27;Friday&#x27;
+        ELSE &#x27;Saturday&#x27;
+    END                                         AS day_of_week,
+    CAST(strftime(&#x27;%H&#x27;, transaction_date) AS INTEGER)
+                                                AS hour_of_day,
+    COUNT(*)                                    AS txn_count,
+    ROUND(AVG(amount), 2)                       AS avg_amount,
+    ROUND(MAX(amount), 2)                       AS max_amount
+FROM transactions
+WHERE amount &gt; 10000
+GROUP BY day_of_week, hour_of_day
+ORDER BY avg_amount DESC
+LIMIT 10;</code></pre>
+  </div>
+
+  <div class="results-section">
+    <h3 class="results-heading">Results</h3>
+    <div class="table-wrapper"><table class="results-table"><thead><tr><th>day_of_week</th><th>hour_of_day</th><th>txn_count</th><th>avg_amount</th><th>max_amount</th></tr></thead><tbody><tr><td>Sunday</td><td>14</td><td>74</td><td>500774.29</td><td>4770479.36</td></tr><tr><td>Sunday</td><td>18</td><td>68</td><td>493746.1</td><td>4797755.95</td></tr><tr><td>Tuesday</td><td>15</td><td>74</td><td>488206.13</td><td>4086253.13</td></tr><tr><td>Thursday</td><td>18</td><td>75</td><td>456694.62</td><td>4809627.45</td></tr><tr><td>Monday</td><td>21</td><td>104</td><td>449465.34</td><td>4383511.59</td></tr><tr><td>Saturday</td><td>22</td><td>77</td><td>447964.35</td><td>4633299.03</td></tr><tr><td>Monday</td><td>14</td><td>88</td><td>444561.29</td><td>4458169.27</td></tr><tr><td>Sunday</td><td>11</td><td>78</td><td>429316.63</td><td>4968781.79</td></tr><tr><td>Monday</td><td>23</td><td>74</td><td>424095.33</td><td>4854648.32</td></tr><tr><td>Friday</td><td>15</td><td>87</td><td>421985.0</td><td>4927122.9</td></tr></tbody></table></div>
+  </div>
+
+  <div class="chart-section"><h3 class="results-heading">Visualization</h3>
+<div class="chart-container">
+  <canvas id="chart-q11" height="200"></canvas>
+</div>
+<script>
+(function() {
+  var ctx = document.getElementById('chart-q11').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ["Sunday", "Sunday", "Tuesday", "Thursday", "Monday", "Saturday", "Monday", "Sunday", "Monday", "Friday"],
+      datasets: [{
+        label: "Avg High-Value Transaction Amount",
+        data: [500774.29, 493746.1, 488206.13, 456694.62, 449465.34, 447964.35, 444561.29, 429316.63, 424095.33, 421985.0],
+        "backgroundColor": ["#58a6ff44","#a371f744","#3fb95044","#d2992244","#2ea6a644","#f8514944","#58a6ff44","#a371f744","#3fb95044","#d2992244"],
+        "borderColor": "#d29922",
+        
+        borderWidth: 2,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#c9d1d9', font: { family: 'Inter' } } },
+        tooltip: { bodyColor: '#c9d1d9', titleColor: '#58a6ff' }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#8b949e', maxRotation: 35, font: { size: 10 } },
+          grid: { color: '#21262d' }
+        },
+        y: {
+          ticks: { color: '#8b949e' },
+          grid: { color: '#21262d' }
+        }
+      }
+    }
+  });
+})();
+</script></div>
+
+  <div class="interpretation">
+    <h3 class="interp-heading">Interpretation</h3>
+    <p>Temporal patterns in high-value transactions reveal operational risk windows. Peaks during off-hours (late night, early morning) or weekends are anomalous for most legitimate business models and warrant closer review. Understanding the normal day/hour distribution also powers time-based alert rules that reduce false positives during typical business hours.</p>
+  </div>
+</div>
+
+<div class="query-card" data-category="date" id="q12">
+  <div class="card-header">
+    <span class="category-badge"
+          style="color:#d29922; background:#2e2a10; border-color:#d2992240;">
+      Date Analysis
+    </span>
+    <div class="query-meta-right">
+      <span class="result-pill">5 cols · 2 rows</span>
+    </div>
+  </div>
+
+  <h2 class="query-title">
+    <span class="query-num">Query 12</span>
+    Dormant Account Reactivation
+  </h2>
+
+  <p class="business-question">
+    <span class="bq-label">Business Question</span>
+    <em>Which dormant accounts have recently reactivated?</em>
+  </p>
+
+  <div class="sql-block-wrapper">
+    <div class="sql-toolbar">
+      <span class="sql-lang-tag">SQL · SQLite</span>
+      <button class="copy-btn" onclick="copySQL(this)">Copy</button>
+    </div>
+    <pre class="language-sql"><code class="language-sql">WITH account_gaps AS (
+    SELECT
+        account_id,
+        transaction_date                          AS current_txn_date,
+        LAG(transaction_date) OVER (
+            PARTITION BY account_id
+            ORDER BY transaction_date
+        )                                         AS prev_txn_date,
+        amount
+    FROM transactions
+),
+reactivations AS (
+    SELECT
+        account_id,
+        prev_txn_date,
+        current_txn_date,
+        ROUND(
+            JULIANDAY(current_txn_date) -
+            JULIANDAY(prev_txn_date),
+        0)                                        AS days_dormant,
+        ROUND(amount, 2)                          AS reactivation_amount
+    FROM account_gaps
+    WHERE prev_txn_date IS NOT NULL
+      AND JULIANDAY(current_txn_date) -
+          JULIANDAY(prev_txn_date) &gt;= 180
+)
+SELECT *
+FROM reactivations
+ORDER BY days_dormant DESC
+LIMIT 10;</code></pre>
+  </div>
+
+  <div class="results-section">
+    <h3 class="results-heading">Results</h3>
+    <div class="table-wrapper"><table class="results-table"><thead><tr><th>account_id</th><th>prev_txn_date</th><th>current_txn_date</th><th>days_dormant</th><th>reactivation_amount</th></tr></thead><tbody><tr><td>ACCT000112</td><td>2025-04-11 07:55:55</td><td>2025-10-31 23:48:17</td><td>204.0</td><td>1147.05</td></tr><tr><td>ACCT000264</td><td>2025-03-27 23:13:43</td><td>2025-10-07 09:23:45</td><td>193.0</td><td>3354.68</td></tr></tbody></table></div>
+  </div>
+
+  <div class="chart-section"><h3 class="results-heading">Visualization</h3>
+<div class="chart-container">
+  <canvas id="chart-q12" height="200"></canvas>
+</div>
+<script>
+(function() {
+  var ctx = document.getElementById('chart-q12').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ["ACCT000112", "ACCT000264"],
+      datasets: [{
+        label: "Days Dormant Before Reactivation",
+        data: [204.0, 193.0],
+        "backgroundColor": ["#58a6ff44","#a371f744","#3fb95044","#d2992244","#2ea6a644","#f8514944","#58a6ff44","#a371f744","#3fb95044","#d2992244"],
+        "borderColor": "#d29922",
+        
+        borderWidth: 2,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#c9d1d9', font: { family: 'Inter' } } },
+        tooltip: { bodyColor: '#c9d1d9', titleColor: '#58a6ff' }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#8b949e', maxRotation: 35, font: { size: 10 } },
+          grid: { color: '#21262d' }
+        },
+        y: {
+          ticks: { color: '#8b949e' },
+          grid: { color: '#21262d' }
+        }
+      }
+    }
+  });
+})();
+</script></div>
+
+  <div class="interpretation">
+    <h3 class="interp-heading">Interpretation</h3>
+    <p>Account dormancy followed by sudden activity is a classic money-laundering indicator: accounts may be opened, left dormant to avoid scrutiny, then activated when needed for layering. JULIANDAY() arithmetic gives an exact day-count gap between consecutive transactions per account. Any reactivation exceeding 180 days should trigger an automatic enhanced due diligence review.</p>
+  </div>
+</div>
+
+<div class="query-card" data-category="joins" id="q13">
+  <div class="card-header">
+    <span class="category-badge"
+          style="color:#2ea6a6; background:#102e2e; border-color:#2ea6a640;">
+      JOINs
+    </span>
+    <div class="query-meta-right">
+      <span class="result-pill">8 cols · 10 rows</span>
+    </div>
+  </div>
+
+  <h2 class="query-title">
+    <span class="query-num">Query 13</span>
+    High-Risk Country Exposure
+  </h2>
+
+  <p class="business-question">
+    <span class="bq-label">Business Question</span>
+    <em>What is the total exposure to high-risk country transactions?</em>
+  </p>
+
+  <div class="sql-block-wrapper">
+    <div class="sql-toolbar">
+      <span class="sql-lang-tag">SQL · SQLite</span>
+      <button class="copy-btn" onclick="copySQL(this)">Copy</button>
+    </div>
+    <pre class="language-sql"><code class="language-sql">SELECT
+    cr.country_name,
+    cr.risk_level,
+    cr.fatf_status,
+    COUNT(t.transaction_id)           AS txn_count,
+    ROUND(SUM(t.amount), 2)           AS total_exposure,
+    ROUND(AVG(t.amount), 2)           AS avg_txn_amount,
+    COUNT(DISTINCT a.customer_id)     AS unique_customers,
+    SUM(CASE WHEN c.risk_rating IN (&#x27;high&#x27;,&#x27;critical&#x27;)
+             THEN 1 ELSE 0 END)       AS high_risk_customers
+FROM transactions t
+JOIN accounts      a  ON t.account_id           = a.account_id
+JOIN customers     c  ON a.customer_id          = c.customer_id
+JOIN country_risk  cr ON t.counterparty_country = cr.country_code
+WHERE cr.risk_level IN (&#x27;high&#x27;, &#x27;critical&#x27;)
+GROUP BY cr.country_name, cr.risk_level, cr.fatf_status
+ORDER BY total_exposure DESC
+LIMIT 10;</code></pre>
+  </div>
+
+  <div class="results-section">
+    <h3 class="results-heading">Results</h3>
+    <div class="table-wrapper"><table class="results-table"><thead><tr><th>country_name</th><th>risk_level</th><th>fatf_status</th><th>txn_count</th><th>total_exposure</th><th>avg_txn_amount</th><th>unique_customers</th><th>high_risk_customers</th></tr></thead><tbody><tr><td>Cuba</td><td>high</td><td>grey_list</td><td>1556</td><td>145585334.02</td><td>93563.84</td><td>330</td><td>556</td></tr><tr><td>Iran</td><td>critical</td><td>black_list</td><td>1485</td><td>141244536.82</td><td>95114.17</td><td>330</td><td>548</td></tr><tr><td>Russia</td><td>high</td><td>suspended</td><td>1478</td><td>140047909.69</td><td>94755.01</td><td>330</td><td>513</td></tr><tr><td>Myanmar</td><td>high</td><td>black_list</td><td>1462</td><td>129372026.45</td><td>88489.76</td><td>324</td><td>521</td></tr><tr><td>Belarus</td><td>high</td><td>suspended</td><td>1530</td><td>126507718.2</td><td>82684.78</td><td>330</td><td>562</td></tr><tr><td>Nigeria</td><td>high</td><td>grey_list</td><td>1508</td><td>125859749.1</td><td>83461.37</td><td>326</td><td>557</td></tr><tr><td>Afghanistan</td><td>high</td><td>black_list</td><td>1507</td><td>117800491.29</td><td>78168.87</td><td>334</td><td>563</td></tr><tr><td>Libya</td><td>high</td><td>grey_list</td><td>1494</td><td>108875867.3</td><td>72875.41</td><td>328</td><td>536</td></tr><tr><td>North Korea</td><td>critical</td><td>black_list</td><td>1495</td><td>107816572.1</td><td>72118.11</td><td>334</td><td>548</td></tr><tr><td>Sudan</td><td>high</td><td>grey_list</td><td>1489</td><td>107243679.83</td><td>72023.96</td><td>333</td><td>526</td></tr></tbody></table></div>
+  </div>
+
+  <div class="chart-section"><h3 class="results-heading">Visualization</h3>
+<div class="chart-container">
+  <canvas id="chart-q13" height="200"></canvas>
+</div>
+<script>
+(function() {
+  var ctx = document.getElementById('chart-q13').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ["Cuba", "Iran", "Russia", "Myanmar", "Belarus", "Nigeria", "Afghanistan", "Libya", "North Korea", "Sudan"],
+      datasets: [{
+        label: "Total Exposure by Country (USD)",
+        data: [145585334.02, 141244536.82, 140047909.69, 129372026.45, 126507718.2, 125859749.1, 117800491.29, 108875867.3, 107816572.1, 107243679.83],
+        "backgroundColor": ["#58a6ff44","#a371f744","#3fb95044","#d2992244","#2ea6a644","#f8514944","#58a6ff44","#a371f744","#3fb95044","#d2992244"],
+        "borderColor": "#2ea6a6",
+        
+        borderWidth: 2,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#c9d1d9', font: { family: 'Inter' } } },
+        tooltip: { bodyColor: '#c9d1d9', titleColor: '#58a6ff' }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#8b949e', maxRotation: 35, font: { size: 10 } },
+          grid: { color: '#21262d' }
+        },
+        y: {
+          ticks: { color: '#8b949e' },
+          grid: { color: '#21262d' }
+        }
+      }
+    }
+  });
+})();
+</script></div>
+
+  <div class="interpretation">
+    <h3 class="interp-heading">Interpretation</h3>
+    <p>A four-table JOIN — transactions → accounts → customers → country_risk — surfaces total monetary exposure to FATF-listed or otherwise high-risk jurisdictions. The high_risk_customers column adds a second risk dimension: transactions to sanctioned countries by already-flagged customers represent the institution&#x27;s highest-priority exposure and may require immediate filing with FinCEN or equivalent authorities.</p>
+  </div>
+</div>
+
+<div class="query-card" data-category="joins" id="q14">
+  <div class="card-header">
+    <span class="category-badge"
+          style="color:#2ea6a6; background:#102e2e; border-color:#2ea6a640;">
+      JOINs
+    </span>
+    <div class="query-meta-right">
+      <span class="result-pill">10 cols · 10 rows</span>
+    </div>
+  </div>
+
+  <h2 class="query-title">
+    <span class="query-num">Query 14</span>
+    Alert-to-Transaction Attribution
+  </h2>
+
+  <p class="business-question">
+    <span class="bq-label">Business Question</span>
+    <em>What transaction characteristics most commonly trigger alerts?</em>
+  </p>
+
+  <div class="sql-block-wrapper">
+    <div class="sql-toolbar">
+      <span class="sql-lang-tag">SQL · SQLite</span>
+      <button class="copy-btn" onclick="copySQL(this)">Copy</button>
+    </div>
+    <pre class="language-sql"><code class="language-sql">SELECT
+    r.rule_name,
+    r.rule_category,
+    a.severity,
+    t.transaction_type,
+    t.channel,
+    COUNT(a.alert_id)                  AS alert_count,
+    ROUND(AVG(t.amount), 2)            AS avg_trigger_amount,
+    ROUND(AVG(a.flagged_amount), 2)    AS avg_flagged_amount,
+    ROUND(MIN(t.amount), 2)            AS min_trigger_amount,
+    ROUND(MAX(t.amount), 2)            AS max_trigger_amount
+FROM alerts a
+JOIN transactions t ON a.transaction_id = t.transaction_id
+JOIN rules        r ON a.rule_id        = r.rule_id
+GROUP BY r.rule_name, r.rule_category,
+         a.severity, t.transaction_type, t.channel
+ORDER BY alert_count DESC
+LIMIT 10;</code></pre>
+  </div>
+
+  <div class="results-section">
+    <h3 class="results-heading">Results</h3>
+    <div class="table-wrapper"><table class="results-table"><thead><tr><th>rule_name</th><th>rule_category</th><th>severity</th><th>transaction_type</th><th>channel</th><th>alert_count</th><th>avg_trigger_amount</th><th>avg_flagged_amount</th><th>min_trigger_amount</th><th>max_trigger_amount</th></tr></thead><tbody><tr><td>Round Dollar Amounts</td><td>behavior</td><td>medium</td><td>transfer</td><td>online</td><td>12</td><td>26713.61</td><td>26713.61</td><td>580.25</td><td>184621.08</td></tr><tr><td>Dormant Account Activity</td><td>behavior</td><td>high</td><td>debit</td><td>mobile</td><td>9</td><td>722086.3</td><td>722086.3</td><td>1497.36</td><td>4706848.16</td></tr><tr><td>Sanctions Country</td><td>geographic</td><td>high</td><td>credit</td><td>atm</td><td>8</td><td>186221.06</td><td>186221.06</td><td>351.4</td><td>861330.24</td></tr><tr><td>Business Account Personal Use</td><td>behavior</td><td>medium</td><td>transfer</td><td>branch</td><td>7</td><td>542128.67</td><td>542128.67</td><td>247.19</td><td>3783302.76</td></tr><tr><td>Cross-Border Wire</td><td>geographic</td><td>medium</td><td>credit</td><td>atm</td><td>7</td><td>25642.3</td><td>25642.3</td><td>153.56</td><td>146633.42</td></tr><tr><td>Dormant Account Activity</td><td>behavior</td><td>medium</td><td>credit</td><td>atm</td><td>7</td><td>71878.76</td><td>71878.76</td><td>1487.04</td><td>414950.1</td></tr><tr><td>High-Risk Country Transfer</td><td>geographic</td><td>high</td><td>transfer</td><td>mobile</td><td>7</td><td>9737.46</td><td>9737.46</td><td>958.8</td><td>33720.94</td></tr><tr><td>Large Cash Transaction</td><td>structuring</td><td>medium</td><td>debit</td><td>mobile</td><td>7</td><td>53564.42</td><td>53564.42</td><td>35.55</td><td>340359.62</td></tr><tr><td>Layering Pattern</td><td>network</td><td>medium</td><td>debit</td><td>branch</td><td>7</td><td>6217.91</td><td>6217.91</td><td>1055.0</td><td>21732.57</td></tr><tr><td>Multiple Small Deposits</td><td>structuring</td><td>critical</td><td>transfer</td><td>atm</td><td>7</td><td>70592.34</td><td>70592.34</td><td>899.09</td><td>316875.44</td></tr></tbody></table></div>
+  </div>
+
+  
+
+  <div class="interpretation">
+    <h3 class="interp-heading">Interpretation</h3>
+    <p>By joining alerts back to their triggering transactions and the rules that fired, this query builds a profile of &#x27;what a suspicious transaction looks like&#x27; under each rule. The combination of channel, transaction_type, and amount range provides actionable intelligence for rule tuning: if a rule fires predominantly on mobile credits under $500, its threshold may be miscalibrated.</p>
+  </div>
+</div>
+
+<div class="query-card" data-category="statistical" id="q15">
+  <div class="card-header">
+    <span class="category-badge"
+          style="color:#f85149; background:#2e1010; border-color:#f8514940;">
+      Statistical
+    </span>
+    <div class="query-meta-right">
+      <span class="result-pill">6 cols · 10 rows</span>
+    </div>
+  </div>
+
+  <h2 class="query-title">
+    <span class="query-num">Query 15</span>
+    Z-Score Anomaly Detection
+  </h2>
+
+  <p class="business-question">
+    <span class="bq-label">Business Question</span>
+    <em>Which days had statistically anomalous transaction volumes?</em>
+  </p>
+
+  <div class="sql-block-wrapper">
+    <div class="sql-toolbar">
+      <span class="sql-lang-tag">SQL · SQLite</span>
+      <button class="copy-btn" onclick="copySQL(this)">Copy</button>
+    </div>
+    <pre class="language-sql"><code class="language-sql">WITH daily_counts AS (
+    SELECT
+        DATE(transaction_date)  AS txn_day,
+        COUNT(*)                AS daily_txn_count
+    FROM transactions
+    GROUP BY DATE(transaction_date)
+),
+stats AS (
+    SELECT
+        AVG(daily_txn_count)                            AS mean_count,
+        SQRT(
+            AVG(daily_txn_count * daily_txn_count)
+            - AVG(daily_txn_count) * AVG(daily_txn_count)
+        )                                               AS stddev_count
+    FROM daily_counts
+)
+SELECT
+    d.txn_day,
+    d.daily_txn_count,
+    ROUND(s.mean_count, 2)                              AS mean,
+    ROUND(s.stddev_count, 2)                            AS stddev,
+    ROUND(
+        (d.daily_txn_count - s.mean_count) /
+        (s.stddev_count + 0.0001),
+    2)                                                  AS z_score,
+    CASE
+        WHEN ABS(
+            (d.daily_txn_count - s.mean_count) /
+            (s.stddev_count + 0.0001)
+        ) &gt; 2 THEN &#x27;ANOMALOUS&#x27;
+        ELSE &#x27;normal&#x27;
+    END                                                 AS flag
+FROM daily_counts d
+CROSS JOIN stats s
+ORDER BY ABS(z_score) DESC
+LIMIT 10;</code></pre>
+  </div>
+
+  <div class="results-section">
+    <h3 class="results-heading">Results</h3>
+    <div class="table-wrapper"><table class="results-table"><thead><tr><th>txn_day</th><th>daily_txn_count</th><th>mean</th><th>stddev</th><th>z_score</th><th>flag</th></tr></thead><tbody><tr><td>2026-03-06</td><td>193</td><td>136.61</td><td>16.81</td><td>3.36</td><td>ANOMALOUS</td></tr><tr><td>2026-02-01</td><td>190</td><td>136.61</td><td>16.81</td><td>3.18</td><td>ANOMALOUS</td></tr><tr><td>2026-02-23</td><td>189</td><td>136.61</td><td>16.81</td><td>3.12</td><td>ANOMALOUS</td></tr><tr><td>2026-03-11</td><td>188</td><td>136.61</td><td>16.81</td><td>3.06</td><td>ANOMALOUS</td></tr><tr><td>2026-01-30</td><td>184</td><td>136.61</td><td>16.81</td><td>2.82</td><td>ANOMALOUS</td></tr><tr><td>2026-02-10</td><td>181</td><td>136.61</td><td>16.81</td><td>2.64</td><td>ANOMALOUS</td></tr><tr><td>2026-02-24</td><td>181</td><td>136.61</td><td>16.81</td><td>2.64</td><td>ANOMALOUS</td></tr><tr><td>2026-01-01</td><td>179</td><td>136.61</td><td>16.81</td><td>2.52</td><td>ANOMALOUS</td></tr><tr><td>2026-03-01</td><td>179</td><td>136.61</td><td>16.81</td><td>2.52</td><td>ANOMALOUS</td></tr><tr><td>2026-03-10</td><td>179</td><td>136.61</td><td>16.81</td><td>2.52</td><td>ANOMALOUS</td></tr></tbody></table></div>
+  </div>
+
+  <div class="chart-section"><h3 class="results-heading">Visualization</h3>
+<div class="chart-container">
+  <canvas id="chart-q15" height="200"></canvas>
+</div>
+<script>
+(function() {
+  var ctx = document.getElementById('chart-q15').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ["2026-03-06", "2026-02-01", "2026-02-23", "2026-03-11", "2026-01-30", "2026-02-10", "2026-02-24", "2026-01-01", "2026-03-01", "2026-03-10"],
+      datasets: [{
+        label: "Z-Score (daily transaction count)",
+        data: [3.36, 3.18, 3.12, 3.06, 2.82, 2.64, 2.64, 2.52, 2.52, 2.52],
+        "backgroundColor": ["#58a6ff44","#a371f744","#3fb95044","#d2992244","#2ea6a644","#f8514944","#58a6ff44","#a371f744","#3fb95044","#d2992244"],
+        "borderColor": "#f85149",
+        
+        borderWidth: 2,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#c9d1d9', font: { family: 'Inter' } } },
+        tooltip: { bodyColor: '#c9d1d9', titleColor: '#58a6ff' }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#8b949e', maxRotation: 35, font: { size: 10 } },
+          grid: { color: '#21262d' }
+        },
+        y: {
+          ticks: { color: '#8b949e' },
+          grid: { color: '#21262d' }
+        }
+      }
+    }
+  });
+})();
+</script></div>
+
+  <div class="interpretation">
+    <h3 class="interp-heading">Interpretation</h3>
+    <p>Standard deviation is not a built-in SQLite aggregate, but the population formula σ = √(E[X²] − (E[X])²) can be expressed entirely using AVG(). This query implements z-score normalization inline: any day with |z| &gt; 2 lies outside 95% of the normal distribution. The CROSS JOIN propagates the platform-wide statistics to every row without a correlated subquery, keeping the plan efficient on large datasets.</p>
+  </div>
+</div>
+
+<div class="query-card" data-category="statistical" id="q16">
+  <div class="card-header">
+    <span class="category-badge"
+          style="color:#f85149; background:#2e1010; border-color:#f8514940;">
+      Statistical
+    </span>
+    <div class="query-meta-right">
+      <span class="result-pill">5 cols · 10 rows</span>
+    </div>
+  </div>
+
+  <h2 class="query-title">
+    <span class="query-num">Query 16</span>
+    Customer Behavioral Cohort Analysis
+  </h2>
+
+  <p class="business-question">
+    <span class="bq-label">Business Question</span>
+    <em>How do transaction patterns evolve across customer cohorts?</em>
+  </p>
+
+  <div class="sql-block-wrapper">
+    <div class="sql-toolbar">
+      <span class="sql-lang-tag">SQL · SQLite</span>
+      <button class="copy-btn" onclick="copySQL(this)">Copy</button>
+    </div>
+    <pre class="language-sql"><code class="language-sql">WITH first_txn AS (
+    SELECT
+        a.customer_id,
+        strftime(&#x27;%Y-%m&#x27;, MIN(t.transaction_date))  AS cohort_month
+    FROM transactions t
+    JOIN accounts a ON t.account_id = a.account_id
+    GROUP BY a.customer_id
+),
+cohort_activity AS (
+    SELECT
+        ft.cohort_month,
+        strftime(&#x27;%Y-%m&#x27;, t.transaction_date)       AS activity_month,
+        COUNT(DISTINCT a.customer_id)               AS active_customers,
+        ROUND(SUM(t.amount), 2)                     AS cohort_volume
+    FROM transactions t
+    JOIN accounts a  ON t.account_id  = a.account_id
+    JOIN first_txn ft ON a.customer_id = ft.customer_id
+    GROUP BY ft.cohort_month, strftime(&#x27;%Y-%m&#x27;, t.transaction_date)
+)
+SELECT
+    cohort_month,
+    activity_month,
+    active_customers,
+    cohort_volume,
+    ROUND(
+        (CAST(strftime(&#x27;%Y&#x27;, activity_month) AS INTEGER) * 12
+         + CAST(strftime(&#x27;%m&#x27;, activity_month) AS INTEGER))
+        - (CAST(strftime(&#x27;%Y&#x27;, cohort_month) AS INTEGER) * 12
+           + CAST(strftime(&#x27;%m&#x27;, cohort_month) AS INTEGER)),
+    0)                                              AS months_since_acquisition
+FROM cohort_activity
+ORDER BY cohort_month, activity_month
+LIMIT 10;</code></pre>
+  </div>
+
+  <div class="results-section">
+    <h3 class="results-heading">Results</h3>
+    <div class="table-wrapper"><table class="results-table"><thead><tr><th>cohort_month</th><th>activity_month</th><th>active_customers</th><th>cohort_volume</th><th>months_since_acquisition</th></tr></thead><tbody><tr><td>2025-03</td><td>2025-03</td><td>337</td><td>238160518.18</td><td>—</td></tr><tr><td>2025-03</td><td>2025-04</td><td>335</td><td>362647626.57</td><td>—</td></tr><tr><td>2025-03</td><td>2025-05</td><td>334</td><td>346927574.65</td><td>—</td></tr><tr><td>2025-03</td><td>2025-06</td><td>335</td><td>334267281.4</td><td>—</td></tr><tr><td>2025-03</td><td>2025-07</td><td>335</td><td>308693469.51</td><td>—</td></tr><tr><td>2025-03</td><td>2025-08</td><td>336</td><td>337827853.53</td><td>—</td></tr><tr><td>2025-03</td><td>2025-09</td><td>335</td><td>304159558.96</td><td>—</td></tr><tr><td>2025-03</td><td>2025-10</td><td>336</td><td>322831431.72</td><td>—</td></tr><tr><td>2025-03</td><td>2025-11</td><td>336</td><td>307941543.84</td><td>—</td></tr><tr><td>2025-03</td><td>2025-12</td><td>335</td><td>353010862.85</td><td>—</td></tr></tbody></table></div>
+  </div>
+
+  <div class="chart-section"><h3 class="results-heading">Visualization</h3>
+<div class="chart-container">
+  <canvas id="chart-q16" height="200"></canvas>
+</div>
+<script>
+(function() {
+  var ctx = document.getElementById('chart-q16').getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: ["2025-03", "2025-03", "2025-03", "2025-03", "2025-03", "2025-03", "2025-03", "2025-03", "2025-03", "2025-03"],
+      datasets: [{
+        label: "Active Customers",
+        data: [337.0, 335.0, 334.0, 335.0, 335.0, 336.0, 335.0, 336.0, 336.0, 335.0],
+        "backgroundColor": "#f8514933",
+        "borderColor": "#f85149",
+        "fill": false, "tension": 0.4,
+        borderWidth: 2,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#c9d1d9', font: { family: 'Inter' } } },
+        tooltip: { bodyColor: '#c9d1d9', titleColor: '#58a6ff' }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#8b949e', maxRotation: 35, font: { size: 10 } },
+          grid: { color: '#21262d' }
+        },
+        y: {
+          ticks: { color: '#8b949e' },
+          grid: { color: '#21262d' }
+        }
+      }
+    }
+  });
+})();
+</script></div>
+
+  <div class="interpretation">
+    <h3 class="interp-heading">Interpretation</h3>
+    <p>Cohort analysis groups customers by acquisition month, then tracks whether each cohort remains active in subsequent months. Cohorts that retain a high proportion of active customers months after onboarding indicate healthy engagement; rapidly declining cohorts may suggest friction in the product experience or account take-over after onboarding. From a compliance perspective, cohorts acquired during known fraud waves deserve retrospective review.</p>
+  </div>
+</div>
+</main>
+
+<footer>
+  Generated March 12, 2026 &nbsp;·&nbsp;
+  <span class="footer-brand">TransactGuard AML</span> &nbsp;·&nbsp;
+  SQL executed against SQLite 3 · real data, no mock results
+</footer>
+
+<!-- Prism.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+
+<script>
+/* ── Filter logic ──────────────────────────────────────────────────── */
+(function () {
+  var pills   = document.querySelectorAll('.filter-pill');
+  var cards   = document.querySelectorAll('.query-card');
+
+  pills.forEach(function (pill) {
+    pill.addEventListener('click', function () {
+      var filter = this.dataset.filter;
+
+      // Update active pill
+      pills.forEach(function (p) { p.classList.remove('active'); });
+      this.classList.add('active');
+
+      // Show/hide cards
+      cards.forEach(function (card) {
+        if (filter === 'all' || card.dataset.category === filter) {
+          card.classList.remove('hidden');
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+    });
+  });
+})();
+
+/* ── Copy SQL button ───────────────────────────────────────────────── */
+function copySQL(btn) {
+  var pre  = btn.closest('.sql-block-wrapper').querySelector('code');
+  var text = pre ? pre.textContent : '';
+  navigator.clipboard.writeText(text).then(function () {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(function () {
+      btn.textContent = 'Copy';
+      btn.classList.remove('copied');
+    }, 2000);
+  }).catch(function () {
+    btn.textContent = 'Error';
+  });
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AML Rule Effectiveness Report — 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --accent: #1e293b; --accent2: #0f172a;
+    --blue: #3b82f6; --green: #10b981; --red: #ef4444;
+    --orange: #f97316; --purple: #8b5cf6; --yellow: #f59e0b;
+    --gray: #6b7280; --light: #f8fafc; --border: #e2e8f0;
+  }
+  body { font-family: 'Inter', sans-serif; background: #f1f5f9; color: #1e293b; font-size: 14px; line-height: 1.6; }
+  .page { max-width: 1200px; margin: 0 auto; padding: 24px; }
+  .classif-banner {
+    background: var(--red); color: white; text-align: center;
+    padding: 8px 16px; font-weight: 700; font-size: 11px;
+    letter-spacing: 3px; text-transform: uppercase; border-radius: 6px 6px 0 0;
+  }
+  .report-header {
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+    color: white; padding: 40px 48px;
+  }
+  .report-header h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 8px; }
+  .report-header .subtitle { font-size: 13px; color: #94a3b8; margin-bottom: 20px; }
+  .header-meta { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 24px; }
+  .meta-item label { font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+  .meta-item span { display: block; font-size: 13px; color: #e2e8f0; font-weight: 500; }
+  .classif-badge {
+    display: inline-block; background: var(--red); color: white;
+    padding: 3px 12px; border-radius: 3px; font-size: 10px;
+    font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px;
+  }
+  .content { background: white; border-radius: 0 0 8px 8px; }
+  .toc { background: var(--light); border: 1px solid var(--border); border-radius: 8px; padding: 24px 32px; margin: 32px; }
+  .toc h2 { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--gray); margin-bottom: 16px; }
+  .toc ol { list-style: none; counter-reset: toc-counter; }
+  .toc ol li { counter-increment: toc-counter; display: flex; align-items: center; padding: 6px 0; border-bottom: 1px dashed #e2e8f0; font-size: 13px; }
+  .toc ol li:last-child { border-bottom: none; }
+  .toc ol li::before { content: counter(toc-counter) "."; font-weight: 700; color: var(--blue); width: 28px; flex-shrink: 0; }
+  .toc ol li .pg { margin-left: auto; color: var(--gray); font-size: 12px; }
+  .section { padding: 32px 40px; border-bottom: 1px solid var(--border); }
+  .section:last-child { border-bottom: none; }
+  .section-title {
+    font-size: 18px; font-weight: 700; color: var(--accent2);
+    margin-bottom: 20px; padding-bottom: 10px;
+    border-bottom: 2px solid var(--blue);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-num {
+    background: var(--blue); color: white;
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; flex-shrink: 0;
+  }
+  .narrative { font-size: 13.5px; color: #374151; line-height: 1.75; margin-bottom: 20px; }
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 20px 0; }
+  .stat-box { background: var(--light); border: 1px solid var(--border); border-radius: 8px; padding: 20px; text-align: center; }
+  .stat-box .stat-val { font-size: 26px; font-weight: 800; color: var(--accent2); }
+  .stat-box .stat-lbl { font-size: 11px; color: var(--gray); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+  .stat-box.highlight { background: linear-gradient(135deg,#1e3a5f,#0f172a); color: white; border: none; }
+  .stat-box.highlight .stat-val { color: white; }
+  .stat-box.highlight .stat-lbl { color: #94a3b8; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 16px 0; overflow-x: auto; }
+  th { background: var(--accent2); color: white; padding: 10px 12px; text-align: left; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:hover td { background: #f8fafc; }
+  tr:last-child td { border-bottom: none; }
+  .text-right { text-align: right; }
+  .cat-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 999px;
+    font-size: 10px; font-weight: 600;
+  }
+  .inline-bar {
+    height: 4px; background: #e2e8f0; border-radius: 999px;
+    margin-top: 4px; overflow: hidden;
+  }
+  .inline-bar div { height: 4px; border-radius: 999px; }
+  .chart-wrap { background: var(--light); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin: 20px 0; }
+  .chart-wrap h3 { font-size: 13px; font-weight: 600; color: var(--gray); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .three-col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .quadrant-legend { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 12px; }
+  .ql-item { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+  .ql-dot { width: 12px; height: 12px; border-radius: 50%; }
+  /* Performer cards */
+  .performer-card { background: white; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 16px; }
+  .pc-header { padding: 16px 20px; display: flex; align-items: center; gap: 16px; }
+  .pc-rank { font-size: 32px; font-weight: 900; min-width: 50px; }
+  .pc-name { color: white; font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .pc-stats { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--border); }
+  .pc-stat { padding: 14px 16px; text-align: center; border-right: 1px solid var(--border); }
+  .pc-stat:last-child { border-right: none; }
+  .pc-val { font-size: 20px; font-weight: 800; }
+  .pc-lbl { font-size: 10px; color: var(--gray); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+  .pc-narrative { padding: 16px 20px; font-size: 13px; color: #374151; line-height: 1.7; background: #f8fafc; }
+  .report-footer {
+    background: var(--accent2); color: #94a3b8;
+    padding: 32px 40px; border-radius: 0 0 8px 8px; font-size: 12px;
+  }
+  .footer-classif {
+    text-align: center; color: white; font-weight: 700;
+    letter-spacing: 3px; font-size: 11px; text-transform: uppercase;
+    padding-top: 16px; border-top: 1px solid #334155; margin-top: 16px;
+  }
+  @media print {
+    body { background: white; font-size: 11px; }
+    .page { max-width: 100%; padding: 0; }
+    .section { break-inside: avoid; padding: 20px 28px; }
+    .performer-card { break-inside: avoid; }
+    .chart-wrap { break-inside: avoid; }
+    @page { margin: 1.5cm; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="classif-banner">&#9632; CONFIDENTIAL &#9632; RESTRICTED DISTRIBUTION &#9632; AML COMPLIANCE DIVISION &#9632;</div>
+  <div class="report-header">
+    <div class="classif-badge">AML Analytics — Confidential</div>
+    <h1>AML RULE EFFECTIVENESS REPORT</h1>
+    <div class="subtitle">Performance Analysis &bull; All 15 Detection Rules &bull; Compliance Engineering Division</div>
+    <div class="header-meta">
+      <div class="meta-item"><label>Report Date</label><span>March 12, 2026</span></div>
+      <div class="meta-item"><label>Rules Analysed</label><span>15 Active Rules</span></div>
+      <div class="meta-item"><label>Reference</label><span>RULE-EFF-2026-Q1</span></div>
+      <div class="meta-item"><label>Classification</label><span style="color:#ef4444;font-weight:700">CONFIDENTIAL</span></div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="toc">
+      <h2>Table of Contents</h2>
+      <ol>
+        <li>Executive Summary<span class="pg">Section 1</span></li>
+        <li>Rule Performance Rankings<span class="pg">Section 2</span></li>
+        <li>Precision-Recall Analysis &amp; Quadrant Classification<span class="pg">Section 3</span></li>
+        <li>Top Performers<span class="pg">Section 4</span></li>
+        <li>Underperformers<span class="pg">Section 5</span></li>
+        <li>Tuning Recommendations<span class="pg">Section 6</span></li>
+        <li>Coverage Analysis<span class="pg">Section 7</span></li>
+        <li>Proposed Changes<span class="pg">Section 8</span></li>
+      </ol>
+    </div>
+
+    <!-- Section 1: Executive Summary -->
+    <div class="section">
+      <div class="section-title"><div class="section-num">1</div>Executive Summary</div>
+      <p class="narrative">
+        This report evaluates the performance of all <strong>15 AML detection rules</strong> currently
+        deployed in the transaction monitoring platform. The analysis covers precision, recall, F1 score,
+        alert volume, and true/false positive rates. The system currently covers an estimated
+        <strong>99.0%</strong> of transaction volume
+        through at least one monitoring rule.
+        The average system F1 score of <strong>0.588</strong> reflects a mixed performance profile,
+        with three "Champion" rules demonstrating both high precision and recall, and four rules
+        requiring immediate tuning attention due to excessive false positive rates.
+        Total historical alerts generated across all rules: <strong>5,987</strong>.
+      </p>
+      <div class="stat-grid">
+        <div class="stat-box highlight">
+          <div class="stat-val">0.588</div>
+          <div class="stat-lbl">Avg System F1 Score</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val">59.2%</div>
+          <div class="stat-lbl">Avg Precision</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val">63.1%</div>
+          <div class="stat-lbl">Avg Recall</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val">5,987</div>
+          <div class="stat-lbl">Total Alerts Generated</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: Rule Performance Rankings -->
+    <div class="section">
+      <div class="section-title"><div class="section-num">2</div>Rule Performance Rankings</div>
+      <p class="narrative">All 15 rules sorted by F1 score (descending). Precision and recall bars are proportional to score.</p>
+      <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>Rule Name</th><th>Category</th>
+            <th class="text-right">Precision</th><th class="text-right">Recall</th>
+            <th class="text-right">F1 Score</th><th class="text-right">Total Alerts</th>
+            <th class="text-right">True Pos</th><th class="text-right">False Pos</th>
+            <th>Quadrant</th><th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td><strong>Smurfing Detection</strong></td>
+          <td><span class="cat-badge" style="background:#ef444420;color:#ef4444;border:1px solid #ef444440">Structuring</span></td>
+          <td class="text-right">76.4%<div class="inline-bar"><div style="width:76%;background:#ef4444"></div></div></td>
+          <td class="text-right">84.3%<div class="inline-bar"><div style="width:84%;background:#ef4444"></div></div></td>
+          <td class="text-right"><strong>0.801</strong></td>
+          <td class="text-right">288</td>
+          <td class="text-right" style="color:#10b981">219</td>
+          <td class="text-right" style="color:#ef4444">69</td>
+          <td><span style="color:#10b981;font-weight:600;font-size:11px">Champion</span></td>
+          <td><span style="color:#10b981;font-weight:600;font-size:11px">Active</span></td>
+        </tr>
+        <tr>
+          <td><strong>New Account High Value</strong></td>
+          <td><span class="cat-badge" style="background:#8b5cf620;color:#8b5cf6;border:1px solid #8b5cf640">Behavior</span></td>
+          <td class="text-right">78.4%<div class="inline-bar"><div style="width:78%;background:#8b5cf6"></div></div></td>
+          <td class="text-right">72.8%<div class="inline-bar"><div style="width:73%;background:#8b5cf6"></div></div></td>
+          <td class="text-right"><strong>0.755</strong></td>
+          <td class="text-right">599</td>
+          <td class="text-right" style="color:#10b981">469</td>
+          <td class="text-right" style="color:#ef4444">130</td>
+          <td><span style="color:#10b981;font-weight:600;font-size:11px">Champion</span></td>
+          <td><span style="color:#10b981;font-weight:600;font-size:11px">Active</span></td>
+        </tr>
+        <tr>
+          <td><strong>Sanctions Country</strong></td>
+          <td><span class="cat-badge" style="background:#3b82f620;color:#3b82f6;border:1px solid #3b82f640">Geographic</span></td>
+          <td class="text-right">79.8%<div class="inline-bar"><div style="width:80%;background:#3b82f6"></div></div></td>
+          <td class="text-right">67.8%<div class="inline-bar"><div style="width:68%;background:#3b82f6"></div></div></td>
+          <td class="text-right"><strong>0.733</strong></td>
+          <td class="text-right">420</td>
+          <td class="text-right" style="color:#10b981">334</td>
+          <td class="text-right" style="color:#ef4444">86</td>
+          <td><span style="color:#10b981;font-weight:600;font-size:11px">Champion</span></td>
+          <td><span style="color:#10b981;font-weight:600;font-size:11px">Active</span></td>
+        </tr>
+        <tr>
+          <td><strong>PEP Transaction</strong></td>
+          <td><span class="cat-badge" style="background:#10b98120;color:#10b981;border:1px solid #10b98140">Network</span></td>
+          <td class="text-right">88.4%<div class="inline-bar"><div style="width:88%;background:#10b981"></div></div></td>
+          <td class="text-right">57.0%<div class="inline-bar"><div style="width:57%;background:#10b981"></div></div></td>
+          <td class="text-right"><strong>0.693</strong></td>
+          <td class="text-right">615</td>
+          <td class="text-right" style="color:#10b981">543</td>
+          <td class="text-right" style="color:#ef4444">72</td>
+          <td><span style="color:#3b82f6;font-weight:600;font-size:11px">Conservative</span></td>
+          <td><span style="color:#10b981;font-weight:600;font-size:11px">Active</span></td>
+        </tr>
+        <tr>
+          <td><strong>Cross-Border Wire</strong></td>
+          <td><span class="cat-badge" style="background:#3b82f620;color:#3b82f6;border:1px solid #3b82f640">Geographic</span></td>
+          <td class="text-right">87.4%<div class="inline-bar"><div style="width:87%;background:#3b82f6"></div></div></td>
+          <td class="text-right">55.1%<div class="inline-bar"><div style="width:55%;background:#3b82f6"></div></div></td>
+          <td class="text-right"><strong>0.676</strong></td>
+          <td class="text-right">144</td>
+          <td class="text-right" style="color:#10b981">125</td>
+          <td class="text-right" style="color:#ef4444">19</td>
+          <td><span style="color:#3b82f6;font-weight:600;font-size:11px">Conservative</span></td>
+          <td><span style="color:#10b981;font-weight:600;font-size:11px">Active</span></td>
+        </tr>
+        <tr>
+          <td><strong>Multiple Small Deposits</strong></td>
+          <td><span class="cat-badge" style="background:#ef444420;color:#ef4444;border:1px solid #ef444440">Structuring</span></td>
+          <td class="text-right">71.9%<div class="inline-bar"><div style="width:72%;background:#ef4444"></div></div></td>
+          <td class="text-right">55.3%<div class="inline-bar"><div style="width:55%;background:#ef4444"></div></div></td>
+          <td class="text-right"><strong>0.625</strong></td>
+          <td class="text-right">209</td>
+          <td class="text-right" style="color:#10b981">150</td>
+          <td class="text-right" style="color:#ef4444">59</td>
+          <td><span style="color:#3b82f6;font-weight:600;font-size:11px">Conservative</span></td>
+          <td><span style="color:#10b981;font-weight:600;font-size:11px">Active</span></td>
+        </tr>
+        <tr>
+          <td><strong>Business Account Personal Use</strong></td>
+          <td><span class="cat-badge" style="background:#8b5cf620;color:#8b5cf6;border:1px solid #8b5cf640">Behavior</span></td>
+          <td class="text-right">52.8%<div class="inline-bar"><div style="width:53%;background:#8b5cf6"></div></div></td>
+          <td class="text-right">60.4%<div class="inline-bar"><div style="width:60%;background:#8b5cf6"></div></div></td>
+          <td class="text-right"><strong>0.564</strong></td>
+          <td class="text-right">423</td>
+          <td class="text-right" style="color:#10b981">223</td>
+          <td class="text-right" style="color:#ef4444">200</td>
+          <td><span style="color:#ef4444;font-weight:600;font-size:11px">Needs Review</span></td>
+          <td><span style="color:#10b981;font-weight:600;font-size:11px">Active</span></td>
+        </tr>
+        <tr>
+          <td><strong>Structuring Detection</strong></td>
+          <td><span class="cat-badge" style="background:#ef444420;color:#ef4444;border:1px solid #ef444440">Structuring</span></td>
+          <td class="text-right">43.4%<div class="inline-bar"><div style="width:43%;background:#ef4444"></div></div></td>
+          <td class="text-right">73.1%<div class="inline-bar"><div style="width:73%;background:#ef4444"></div></div></td>
+          <td class="text-right"><strong>0.545</strong></td>
+          <td class="text-right">742</td>
+          <td class="text-right" style="color:#10b981">321</td>
+          <td class="text-right" style="color:#ef4444">421</td>
+          <td><span style="color:#f97316;font-weight:600;font-size:11px">Noisy</span></td>
+          <td><span style="color:#10b981;font-weight:600;font-size:11px">Active</span></td>
+        </tr>
+        <tr>
+          <td><strong>Dormant Account Activity</strong></td>
+          <td><span class="cat-badge" style="background:#8b5cf620;color:#8b5cf6;border:1px solid #8b5cf640">Behavior</span></td>
+          <td class="text-right">43.2%<div class="inline-bar"><div style="width:43%;background:#8b5cf6"></div></div></td>
+          <td class="text-right">66.5%<div class="inline-bar"><div style="width:67%;background:#8b5cf6"></div></div></td>
+          <td class="text-right"><strong>0.524</strong></td>
+          <td class="text-right">56</td>
+          <td class="text-right" style="color:#10b981">24</td>
+          <td class="text-right" style="color:#ef4444">32</td>
+          <td><span style="color:#f97316;font-weight:600;font-size:11px">Noisy</span></td>
+          <td><span style="color:#10b981;font-weight:600;font-size:11px">Active</span></td>
+        </tr>
+        <tr>
+          <td><strong>Round Dollar Amounts</strong></td>
+          <td><span class="cat-badge" style="background:#8b5cf620;color:#8b5cf6;border:1px solid #8b5cf640">Behavior</span></td>
+          <td class="text-right">41.9%<div class="inline-bar"><div style="width:42%;background:#8b5cf6"></div></div></td>
+          <td class="text-right">69.2%<div class="inline-bar"><div style="width:69%;background:#8b5cf6"></div></div></td>
+          <td class="text-right"><strong>0.522</strong></td>
+          <td class="text-right">608</td>
+          <td class="text-right" style="color:#10b981">254</td>
+          <td class="text-right" style="color:#ef4444">354</td>
+          <td><span style="color:#f97316;font-weight:600;font-size:11px">Noisy</span></td>
+          <td><span style="color:#10b981;font-weight:600;font-size:11px">Active</span></td>
+        </tr>
+        <tr>
+          <td><strong>Large Cash Transaction</strong></td>
+          <td><span class="cat-badge" style="background:#ef444420;color:#ef4444;border:1px solid #ef444440">Structuring</span></td>
+          <td class="text-right">68.4%<div class="inline-bar"><div style="width:68%;background:#ef4444"></div></div></td>
+          <td class="text-right">41.1%<div class="inline-bar"><div style="width:41%;background:#ef4444"></div></div></td>
+          <td class="text-right"><strong>0.514</strong></td>
+          <td class="text-right">331</td>
+          <td class="text-right" style="color:#10b981">226</td>
+          <td class="text-right" style="color:#ef4444">105</td>
+          <td><span style="color:#3b82f6;font-weight:600;font-size:11px">Conservative</span></td>
+          <td><span style="color:#10b981;font-weight:600;font-size:11px">Active</span></td>
+        </tr>
+        <tr>
+          <td><strong>High-Risk Country Transfer</strong></td>
+          <td><span class="cat-badge" style="background:#3b82f620;color:#3b82f6;border:1px solid #3b82f640">Geographic</span></td>
+          <td class="text-right">43.1%<div class="inline-bar"><div style="width:43%;background:#3b82f6"></div></div></td>
+          <td class="text-right">62.7%<div class="inline-bar"><div style="width:63%;background:#3b82f6"></div></div></td>
+          <td class="text-right"><strong>0.511</strong></td>
+          <td class="text-right">77</td>
+          <td class="text-right" style="color:#10b981">33</td>
+          <td class="text-right" style="color:#ef4444">44</td>
+          <td><span style="color:#ef4444;font-weight:600;font-size:11px">Needs Review</span></td>
+          <td><span style="color:#10b981;font-weight:600;font-size:11px">Active</span></td>
+        </tr>
+        <tr>
+          <td><strong>Velocity Check 24h</strong></td>
+          <td><span class="cat-badge" style="background:#f9731620;color:#f97316;border:1px solid #f9731640">Velocity</span></td>
+          <td class="text-right">35.8%<div class="inline-bar"><div style="width:36%;background:#f97316"></div></div></td>
+          <td class="text-right">78.1%<div class="inline-bar"><div style="width:78%;background:#f97316"></div></div></td>
+          <td class="text-right"><strong>0.491</strong></td>
+          <td class="text-right">668</td>
+          <td class="text-right" style="color:#10b981">239</td>
+          <td class="text-right" style="color:#ef4444">429</td>
+          <td><span style="color:#f97316;font-weight:600;font-size:11px">Noisy</span></td>
+          <td><span style="color:#10b981;font-weight:600;font-size:11px">Active</span></td>
+        </tr>
+        <tr>
+          <td><strong>Rapid Fund Movement</strong></td>
+          <td><span class="cat-badge" style="background:#f9731620;color:#f97316;border:1px solid #f9731640">Velocity</span></td>
+          <td class="text-right">35.2%<div class="inline-bar"><div style="width:35%;background:#f97316"></div></div></td>
+          <td class="text-right">59.0%<div class="inline-bar"><div style="width:59%;background:#f97316"></div></div></td>
+          <td class="text-right"><strong>0.441</strong></td>
+          <td class="text-right">80</td>
+          <td class="text-right" style="color:#10b981">28</td>
+          <td class="text-right" style="color:#ef4444">52</td>
+          <td><span style="color:#ef4444;font-weight:600;font-size:11px">Needs Review</span></td>
+          <td><span style="color:#10b981;font-weight:600;font-size:11px">Active</span></td>
+        </tr>
+        <tr>
+          <td><strong>Layering Pattern</strong></td>
+          <td><span class="cat-badge" style="background:#10b98120;color:#10b981;border:1px solid #10b98140">Network</span></td>
+          <td class="text-right">41.5%<div class="inline-bar"><div style="width:42%;background:#10b981"></div></div></td>
+          <td class="text-right">43.1%<div class="inline-bar"><div style="width:43%;background:#10b981"></div></div></td>
+          <td class="text-right"><strong>0.423</strong></td>
+          <td class="text-right">727</td>
+          <td class="text-right" style="color:#10b981">301</td>
+          <td class="text-right" style="color:#ef4444">426</td>
+          <td><span style="color:#ef4444;font-weight:600;font-size:11px">Needs Review</span></td>
+          <td><span style="color:#10b981;font-weight:600;font-size:11px">Active</span></td>
+        </tr></tbody>
+      </table>
+      </div>
+    </div>
+
+    <!-- Section 3: PR Analysis -->
+    <div class="section">
+      <div class="section-title"><div class="section-num">3</div>Precision-Recall Analysis &amp; Quadrant Classification</div>
+      <p class="narrative">
+        The scatter plot below maps all 15 rules by their precision (Y axis) and recall (X axis).
+        Quadrant thresholds are set at 0.65 for both axes. Rules in the top-right quadrant
+        are "Champions" — they detect reliably with few false positives. Rules in the top-left
+        are "Noisy" (high recall but low precision). Bottom-right rules are "Conservative"
+        (precise but miss many true cases). Bottom-left rules "Need Review".
+      </p>
+      <div class="quadrant-legend">
+        <div class="ql-item"><div class="ql-dot" style="background:#10b981"></div> Champion (high P + high R)</div>
+        <div class="ql-item"><div class="ql-dot" style="background:#f97316"></div> Noisy (low P, high R)</div>
+        <div class="ql-item"><div class="ql-dot" style="background:#3b82f6"></div> Conservative (high P, low R)</div>
+        <div class="ql-item"><div class="ql-dot" style="background:#ef4444"></div> Needs Review (low P + low R)</div>
+      </div>
+      <div class="chart-wrap">
+        <h3>Precision vs. Recall — All 15 Rules</h3>
+        <canvas id="scatterChart" height="300"></canvas>
+      </div>
+    </div>
+
+    <!-- Section 4: Top Performers -->
+    <div class="section">
+      <div class="section-title"><div class="section-num">4</div>Top Performers</div>
+      <p class="narrative">The three highest-performing rules by F1 score. These rules represent the detection backbone of the AML programme.</p>
+      
+        <div class="performer-card" style="border-top:4px solid #10b981">
+          <div class="pc-header" style="background:linear-gradient(135deg,#1e3a5f,#1e3a5fcc)">
+            <div class="pc-rank" style="color:#10b981">#1</div>
+            <div>
+              <div class="pc-name">Smurfing Detection</div>
+              <span class="cat-badge" style="background:#ef444430;color:#ef4444">Structuring</span>
+            </div>
+          </div>
+          <div class="pc-stats">
+            <div class="pc-stat"><div class="pc-val" style="color:#10b981">0.801</div><div class="pc-lbl">F1 Score</div></div>
+            <div class="pc-stat"><div class="pc-val">76.4%</div><div class="pc-lbl">Precision</div></div>
+            <div class="pc-stat"><div class="pc-val">84.3%</div><div class="pc-lbl">Recall</div></div>
+            <div class="pc-stat"><div class="pc-val">288</div><div class="pc-lbl">Total Alerts</div></div>
+          </div>
+          <div class="pc-narrative"><strong>Smurfing Detection</strong> ranks #1 by F1 score (0.801), demonstrating strong detection capability with 76.4% precision and 84.3% recall. The rule has generated 288 alerts historically, confirming 219 true positives. This rule is a core contributor to the AML detection framework and should be maintained at current threshold settings.</div>
+        </div>
+        <div class="performer-card" style="border-top:4px solid #10b981">
+          <div class="pc-header" style="background:linear-gradient(135deg,#1e3a5f,#1e3a5fcc)">
+            <div class="pc-rank" style="color:#10b981">#2</div>
+            <div>
+              <div class="pc-name">New Account High Value</div>
+              <span class="cat-badge" style="background:#8b5cf630;color:#8b5cf6">Behavior</span>
+            </div>
+          </div>
+          <div class="pc-stats">
+            <div class="pc-stat"><div class="pc-val" style="color:#10b981">0.755</div><div class="pc-lbl">F1 Score</div></div>
+            <div class="pc-stat"><div class="pc-val">78.4%</div><div class="pc-lbl">Precision</div></div>
+            <div class="pc-stat"><div class="pc-val">72.8%</div><div class="pc-lbl">Recall</div></div>
+            <div class="pc-stat"><div class="pc-val">599</div><div class="pc-lbl">Total Alerts</div></div>
+          </div>
+          <div class="pc-narrative"><strong>New Account High Value</strong> ranks #2 by F1 score (0.755), demonstrating strong detection capability with 78.4% precision and 72.8% recall. The rule has generated 599 alerts historically, confirming 469 true positives. This rule is a core contributor to the AML detection framework and should be maintained at current threshold settings.</div>
+        </div>
+        <div class="performer-card" style="border-top:4px solid #10b981">
+          <div class="pc-header" style="background:linear-gradient(135deg,#1e3a5f,#1e3a5fcc)">
+            <div class="pc-rank" style="color:#10b981">#3</div>
+            <div>
+              <div class="pc-name">Sanctions Country</div>
+              <span class="cat-badge" style="background:#3b82f630;color:#3b82f6">Geographic</span>
+            </div>
+          </div>
+          <div class="pc-stats">
+            <div class="pc-stat"><div class="pc-val" style="color:#10b981">0.733</div><div class="pc-lbl">F1 Score</div></div>
+            <div class="pc-stat"><div class="pc-val">79.8%</div><div class="pc-lbl">Precision</div></div>
+            <div class="pc-stat"><div class="pc-val">67.8%</div><div class="pc-lbl">Recall</div></div>
+            <div class="pc-stat"><div class="pc-val">420</div><div class="pc-lbl">Total Alerts</div></div>
+          </div>
+          <div class="pc-narrative"><strong>Sanctions Country</strong> ranks #3 by F1 score (0.733), demonstrating strong detection capability with 79.8% precision and 67.8% recall. The rule has generated 420 alerts historically, confirming 334 true positives. This rule is a core contributor to the AML detection framework and should be maintained at current threshold settings.</div>
+        </div>
+    </div>
+
+    <!-- Section 5: Underperformers -->
+    <div class="section">
+      <div class="section-title"><div class="section-num">5</div>Underperformers</div>
+      <p class="narrative">The three lowest-performing rules by F1 score. These rules are generating disproportionate analyst workload relative to their detection value.</p>
+      
+        <div class="performer-card" style="border-top:4px solid #ef4444">
+          <div class="pc-header" style="background:linear-gradient(135deg,#7f1d1d,#7f1d1dcc)">
+            <div class="pc-rank" style="color:#ef4444">#13</div>
+            <div>
+              <div class="pc-name">Velocity Check 24h</div>
+              <span class="cat-badge" style="background:#f9731630;color:#f97316">Velocity</span>
+            </div>
+          </div>
+          <div class="pc-stats">
+            <div class="pc-stat"><div class="pc-val" style="color:#ef4444">0.491</div><div class="pc-lbl">F1 Score</div></div>
+            <div class="pc-stat"><div class="pc-val">35.8%</div><div class="pc-lbl">Precision</div></div>
+            <div class="pc-stat"><div class="pc-val">78.1%</div><div class="pc-lbl">Recall</div></div>
+            <div class="pc-stat"><div class="pc-val">668</div><div class="pc-lbl">Total Alerts</div></div>
+          </div>
+          <div class="pc-narrative"><strong>Velocity Check 24h</strong> shows underperformance with F1 score of 0.491 (35.8% precision, 78.1% recall). Of 668 alerts generated, 429 (64%) were false positives. <strong>Tuning recommendation:</strong> Introduce a minimum transaction amount filter of $2,500. Current threshold generates many low-value false positives that consume analyst capacity.</div>
+        </div>
+        <div class="performer-card" style="border-top:4px solid #ef4444">
+          <div class="pc-header" style="background:linear-gradient(135deg,#7f1d1d,#7f1d1dcc)">
+            <div class="pc-rank" style="color:#ef4444">#14</div>
+            <div>
+              <div class="pc-name">Rapid Fund Movement</div>
+              <span class="cat-badge" style="background:#f9731630;color:#f97316">Velocity</span>
+            </div>
+          </div>
+          <div class="pc-stats">
+            <div class="pc-stat"><div class="pc-val" style="color:#ef4444">0.441</div><div class="pc-lbl">F1 Score</div></div>
+            <div class="pc-stat"><div class="pc-val">35.2%</div><div class="pc-lbl">Precision</div></div>
+            <div class="pc-stat"><div class="pc-val">59.0%</div><div class="pc-lbl">Recall</div></div>
+            <div class="pc-stat"><div class="pc-val">80</div><div class="pc-lbl">Total Alerts</div></div>
+          </div>
+          <div class="pc-narrative"><strong>Rapid Fund Movement</strong> shows underperformance with F1 score of 0.441 (35.2% precision, 59.0% recall). Of 80 alerts generated, 52 (65%) were false positives. <strong>Tuning recommendation:</strong> Introduce a minimum transaction amount filter of $2,500. Current threshold generates many low-value false positives that consume analyst capacity.</div>
+        </div>
+        <div class="performer-card" style="border-top:4px solid #ef4444">
+          <div class="pc-header" style="background:linear-gradient(135deg,#7f1d1d,#7f1d1dcc)">
+            <div class="pc-rank" style="color:#ef4444">#15</div>
+            <div>
+              <div class="pc-name">Layering Pattern</div>
+              <span class="cat-badge" style="background:#10b98130;color:#10b981">Network</span>
+            </div>
+          </div>
+          <div class="pc-stats">
+            <div class="pc-stat"><div class="pc-val" style="color:#ef4444">0.423</div><div class="pc-lbl">F1 Score</div></div>
+            <div class="pc-stat"><div class="pc-val">41.5%</div><div class="pc-lbl">Precision</div></div>
+            <div class="pc-stat"><div class="pc-val">43.1%</div><div class="pc-lbl">Recall</div></div>
+            <div class="pc-stat"><div class="pc-val">727</div><div class="pc-lbl">Total Alerts</div></div>
+          </div>
+          <div class="pc-narrative"><strong>Layering Pattern</strong> shows underperformance with F1 score of 0.423 (41.5% precision, 43.1% recall). Of 727 alerts generated, 426 (59%) were false positives. <strong>Tuning recommendation:</strong> Add minimum network depth of 2 hops and require at least $10,000 in connected transaction value before triggering.</div>
+        </div>
+    </div>
+
+    <!-- Section 6: Tuning Recommendations -->
+    <div class="section">
+      <div class="section-title"><div class="section-num">6</div>Tuning Recommendations</div>
+      <p class="narrative">Specific tuning proposals for rules with F1 score below 0.50, with expected performance impact.</p>
+      <table>
+        <thead>
+          <tr><th>Rule</th><th class="text-right">Current F1</th><th>Current Config</th><th>Proposed Config</th><th>Expected Impact</th></tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td><strong>Velocity Check 24h</strong><br>
+            <small style="color:#6b7280">Velocity</small></td>
+          <td class="text-right">0.491</td>
+          <td>10 txns/24h</td>
+          <td style="color:#3b82f6">10 txns/24h + $2,500 min</td>
+          <td style="color:#10b981">+18% precision</td>
+        </tr>
+        <tr>
+          <td><strong>Rapid Fund Movement</strong><br>
+            <small style="color:#6b7280">Velocity</small></td>
+          <td class="text-right">0.441</td>
+          <td>Any amount</td>
+          <td style="color:#3b82f6">$5,000 minimum</td>
+          <td style="color:#10b981">-40% false positives</td>
+        </tr>
+        <tr>
+          <td><strong>Layering Pattern</strong><br>
+            <small style="color:#6b7280">Network</small></td>
+          <td class="text-right">0.423</td>
+          <td>3 hops</td>
+          <td style="color:#3b82f6">3 hops + $10k min value</td>
+          <td style="color:#10b981">+15% precision</td>
+        </tr></tbody>
+      </table>
+    </div>
+
+    <!-- Section 7: Coverage Analysis -->
+    <div class="section">
+      <div class="section-title"><div class="section-num">7</div>Coverage Analysis</div>
+      <p class="narrative">
+        The platform monitors <strong>50,000</strong> total transactions.
+        An estimated <strong>99.0%</strong> of transaction volume
+        is covered by at least one active monitoring rule. The chart below shows alert volume by rule —
+        larger bars indicate higher-volume rules that require maintained performance to avoid analyst overload.
+      </p>
+      <div class="chart-wrap">
+        <h3>Alert Volume by Rule</h3>
+        <canvas id="volumeChart" height="130"></canvas>
+      </div>
+    </div>
+
+    <!-- Section 8: Proposed Changes -->
+    <div class="section">
+      <div class="section-title"><div class="section-num">8</div>Proposed Changes</div>
+      <p class="narrative">Formal change proposals for Q2 2026 rule configuration updates, pending AML Oversight Committee approval.</p>
+      <table>
+        <thead>
+          <tr><th>Action</th><th>Rule</th><th>Current Threshold</th><th>Proposed Threshold</th><th>Expected Impact</th></tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td><span style="background:#3b82f620;color:#3b82f6;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">Tune</span></td>
+          <td><strong>Structuring Detection</strong></td>
+          <td style="font-family:monospace;font-size:12px">$9,500</td>
+          <td style="font-family:monospace;font-size:12px;color:#3b82f6">$8,750</td>
+          <td style="color:#475569;font-size:12.5px">High precision uplift; reduce FP analyst burden</td>
+        </tr>
+        <tr>
+          <td><span style="background:#3b82f620;color:#3b82f6;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">Tune</span></td>
+          <td><strong>Velocity Check 24h</strong></td>
+          <td style="font-family:monospace;font-size:12px">No amount floor</td>
+          <td style="font-family:monospace;font-size:12px;color:#3b82f6">$2,500 minimum</td>
+          <td style="color:#475569;font-size:12.5px">Eliminate low-value noise</td>
+        </tr>
+        <tr>
+          <td><span style="background:#3b82f620;color:#3b82f6;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">Tune</span></td>
+          <td><strong>Rapid Fund Movement</strong></td>
+          <td style="font-family:monospace;font-size:12px">No amount floor</td>
+          <td style="font-family:monospace;font-size:12px;color:#3b82f6">$5,000 minimum</td>
+          <td style="color:#475569;font-size:12.5px">-40% false positives projected</td>
+        </tr>
+        <tr>
+          <td><span style="background:#ef444420;color:#ef4444;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">Retire & Rebuild</span></td>
+          <td><strong>Layering Pattern</strong></td>
+          <td style="font-family:monospace;font-size:12px">3 sequential transfers</td>
+          <td style="font-family:monospace;font-size:12px;color:#3b82f6">ML-based network graph model</td>
+          <td style="color:#475569;font-size:12.5px">Fundamental precision improvement</td>
+        </tr>
+        <tr>
+          <td><span style="background:#10b98120;color:#10b981;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">Promote</span></td>
+          <td><strong>PEP Transaction</strong></td>
+          <td style="font-family:monospace;font-size:12px">Direct PEP only</td>
+          <td style="font-family:monospace;font-size:12px;color:#3b82f6">Direct + beneficial owner PEP</td>
+          <td style="color:#475569;font-size:12.5px">Expanded coverage, +30% recall</td>
+        </tr>
+        <tr>
+          <td><span style="background:#8b5cf620;color:#8b5cf6;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">New Rule</span></td>
+          <td><strong>Crypto Off-Ramp</strong></td>
+          <td style="font-family:monospace;font-size:12px">N/A</td>
+          <td style="font-family:monospace;font-size:12px;color:#3b82f6">$10,000 threshold</td>
+          <td style="color:#475569;font-size:12.5px">Address emerging typology gap</td>
+        </tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="report-footer">
+    <div style="color:#e2e8f0;font-weight:600;margin-bottom:8px">Compliance Engineering Division — Rule Performance Analysis</div>
+    <div style="font-size:11px;margin-bottom:12px">
+      Report Reference: RULE-EFF-2026-Q1 &bull;
+      Generated: 2026-03-12 12:15:29 &bull;
+      Rules Analysed: 15 &bull; Total Historical Alerts: 5,987
+    </div>
+    <div class="footer-classif">&#9632; CONFIDENTIAL — AML COMPLIANCE DIVISION — RESTRICTED &#9632;</div>
+  </div>
+</div>
+
+<script>
+// Scatter chart
+(function() {
+  const labels = ["Smurfing Detection", "New Account High Value", "Sanctions Country", "PEP Transaction", "Cross-Border Wire", "Multiple Small Deposits", "Business Account Personal Use", "Structuring Detection", "Dormant Account Activity", "Round Dollar Amounts", "Large Cash Transaction", "High-Risk Country Transfer", "Velocity Check 24h", "Rapid Fund Movement", "Layering Pattern"];
+  const data = [{"x": 0.8433, "y": 0.7638}, {"x": 0.7284, "y": 0.7843}, {"x": 0.6783, "y": 0.7976}, {"x": 0.5703, "y": 0.8839}, {"x": 0.5515, "y": 0.8743}, {"x": 0.5531, "y": 0.7189}, {"x": 0.604, "y": 0.5281}, {"x": 0.7314, "y": 0.4339}, {"x": 0.6652, "y": 0.4323}, {"x": 0.6924, "y": 0.4193}, {"x": 0.4113, "y": 0.6837}, {"x": 0.6274, "y": 0.4312}, {"x": 0.7814, "y": 0.358}, {"x": 0.5899, "y": 0.3522}, {"x": 0.4313, "y": 0.4154}];
+  const colors = ["#10b981", "#10b981", "#10b981", "#3b82f6", "#3b82f6", "#3b82f6", "#ef4444", "#f97316", "#f97316", "#f97316", "#3b82f6", "#ef4444", "#f97316", "#ef4444", "#ef4444"];
+  const ctx = document.getElementById('scatterChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: [{
+        label: 'Rules',
+        data: data,
+        backgroundColor: colors.map(c => c + 'cc'),
+        borderColor: colors,
+        borderWidth: 2,
+        pointRadius: 10,
+        pointHoverRadius: 13,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              const i = ctx.dataIndex;
+              return labels[i] + ' | P: ' + ctx.parsed.y.toFixed(2) + ' | R: ' + ctx.parsed.x.toFixed(2);
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Recall', font: { weight: 'bold' } },
+          min: 0, max: 1,
+          grid: { color: '#e2e8f0' }
+        },
+        y: {
+          title: { display: true, text: 'Precision', font: { weight: 'bold' } },
+          min: 0, max: 1,
+          grid: { color: '#e2e8f0' }
+        }
+      },
+      animation: {
+        onComplete: function(anim) {
+          // Draw quadrant lines
+          const chart = anim.chart;
+          const ctx2 = chart.ctx;
+          const xScale = chart.scales.x;
+          const yScale = chart.scales.y;
+          const x065 = xScale.getPixelForValue(0.65);
+          const y065 = yScale.getPixelForValue(0.65);
+          ctx2.save();
+          ctx2.strokeStyle = '#94a3b8';
+          ctx2.lineWidth = 1;
+          ctx2.setLineDash([6, 4]);
+          ctx2.beginPath();
+          ctx2.moveTo(x065, yScale.top);
+          ctx2.lineTo(x065, yScale.bottom);
+          ctx2.stroke();
+          ctx2.beginPath();
+          ctx2.moveTo(xScale.left, y065);
+          ctx2.lineTo(xScale.right, y065);
+          ctx2.stroke();
+          ctx2.restore();
+          // Draw rule name labels
+          ctx2.save();
+          ctx2.font = '10px Inter, sans-serif';
+          ctx2.fillStyle = '#374151';
+          data.forEach((pt, i) => {
+            const px = xScale.getPixelForValue(pt.x);
+            const py = yScale.getPixelForValue(pt.y);
+            ctx2.fillText(labels[i].split(' ').slice(0,2).join(' '), px + 12, py - 4);
+          });
+          ctx2.restore();
+        }
+      }
+    }
+  });
+})();
+
+// Volume bar chart
+(function() {
+  const ctx = document.getElementById('volumeChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ["Structuring Detection", "Layering Pattern", "Velocity Check 24h", "PEP Transaction", "Round Dollar Amounts", "New Account High Value", "Business Account Personal Use", "Sanctions Country", "Large Cash Transaction", "Smurfing Detection", "Multiple Small Deposits", "Cross-Border Wire", "Rapid Fund Movement", "High-Risk Country Transfer", "Dormant Account Activity"],
+      datasets: [{
+        label: 'Total Alerts Generated',
+        data: [742, 727, 668, 615, 608, 599, 423, 420, 331, 288, 209, 144, 80, 77, 56],
+        backgroundColor: ["#ef4444", "#10b981", "#f97316", "#10b981", "#8b5cf6", "#8b5cf6", "#8b5cf6", "#3b82f6", "#ef4444", "#ef4444", "#ef4444", "#3b82f6", "#f97316", "#3b82f6", "#8b5cf6"],
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { beginAtZero: true, grid: { color: '#e2e8f0' } },
+        y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+      }
+    }
+  });
+})();
+</script>
+</body>
+</html>
